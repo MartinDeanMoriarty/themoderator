@@ -1,5 +1,5 @@
 package com.nomoneypirate.llm;
 
-public record ModerationDecision(Action action, String playerName, String text) {
-    public enum Action { CHAT, WHISPER, WARN, KICK, IGNORE }
+public record ModerationDecision(Action action, String value, String value2) {
+    public enum Action { CHAT, WHISPER, WARN, KICK, IGNORE, PLAYERLIST }
 }

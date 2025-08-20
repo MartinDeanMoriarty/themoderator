@@ -13,16 +13,47 @@ import static com.nomoneypirate.Themoderator.LOGGER;
 public final class LlmClient {
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
     private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(2))
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
     private static final Gson GSON = new GsonBuilder().create();
 
     // Set model name + prompts
     private static final String MODEL = ConfigLoader.config.model; // Ollama-Model
     private static final String SYSTEM_RULES = ConfigLoader.config.systemRules;
+    private static final String SYSTEM_PROMPT = ConfigLoader.config.systemPrompt;
+    private static final String FEEDBACK_PROMPT = ConfigLoader.config.feedbackPROMPT;
 
+    // To LLM
+    // Feedback
+    public static CompletableFuture<ModerationDecision> sendFeedbackAsync(String feedback) {
+        String prompt = FEEDBACK_PROMPT.formatted(SYSTEM_RULES, feedback);
+
+        JsonObject body = new JsonObject();
+        body.addProperty("model", MODEL);
+        body.addProperty("prompt", prompt);
+        body.addProperty("stream", false);
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(OLLAMA_URI)
+                .timeout(Duration.ofSeconds(30))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+                .build();
+
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(resp -> {
+                    if (resp.statusCode() / 100 != 2) {
+                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
+                    }
+                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
+                    String responseText = json.get("response").getAsString().trim();
+                    return parseDecision(responseText);
+                });
+    }
+
+    // Moderation
     public static CompletableFuture<ModerationDecision> moderateAsync(String playerName, String message) {
-        String prompt = ConfigLoader.config.systemPrompt.formatted(SYSTEM_RULES, playerName, message);
+        String prompt = SYSTEM_PROMPT.formatted(SYSTEM_RULES, playerName, message);
 
         // build json
         JsonObject body = new JsonObject();
@@ -33,7 +64,7 @@ public final class LlmClient {
         // Make request
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(8))
+                .timeout(Duration.ofSeconds(30))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
@@ -53,19 +84,19 @@ public final class LlmClient {
 
     // Parse response
     private static ModerationDecision parseDecision(String responseText) {
-        String text = "";
-        String playerName = "";
+        String value = "";
+        String value2 = "";
         try {
             JsonObject o = JsonParser.parseString(responseText).getAsJsonObject();
             String actionStr = o.get("action").getAsString().toUpperCase();
 
-            // Does text exist?
-            if (o.has("text") && !o.get("text").isJsonNull()) {
-                text = o.get("text").getAsString();
+            // Does value exist?
+            if (o.has("value") && !o.get("value").isJsonNull()) {
+                value = o.get("value").getAsString();
             }
-            // Does playerName exist?
-            if (o.has("playerName") && !o.get("playerName").isJsonNull()) {
-                playerName = o.get("playerName").getAsString();
+            // Does value2 exist?
+            if (o.has("value2") && !o.get("value2").isJsonNull()) {
+                value2 = o.get("value2").getAsString();
             }
 
             ModerationDecision.Action action = switch (actionStr) {
@@ -74,14 +105,15 @@ public final class LlmClient {
                 case "WARN" -> ModerationDecision.Action.WARN;
                 case "KICK" -> ModerationDecision.Action.KICK;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
-                default -> ModerationDecision.Action.CHAT;
+                case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
+                default -> ModerationDecision.Action.IGNORE;
             };
-            return new ModerationDecision(action, playerName, text);
+            return new ModerationDecision(action, value, value2);
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON, fallback to IGNORE
             // and log it just in case we want to debug what the llm response was
-            LOGGER.info("[themoderator]{}", text);
-            return new ModerationDecision(ModerationDecision.Action.IGNORE, playerName,"Unclear output from llm model.");
+            LOGGER.info("[themoderator] {}",  "Unclear output from llm model.");
+            return new ModerationDecision(ModerationDecision.Action.IGNORE, "Unclear output from llm model.","");
 
         }
     }

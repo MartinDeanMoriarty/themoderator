@@ -6,15 +6,22 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.entity.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
+
 import static net.minecraft.server.command.CommandManager.literal;
+
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
+
 
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
@@ -47,7 +54,6 @@ public class Themoderator implements ModInitializer {
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
                 // In case of errors: do not block anything, at most log
-                //System.err.println("[themoderator] LLM error: " + ex.getMessage());
                 LOGGER.error("[themoderator] Welcoming failed: {}", ex.getMessage());
                 return null;
             });
@@ -68,65 +74,109 @@ public class Themoderator implements ModInitializer {
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
                 // In case of errors: do not block anything, at most log
-                //System.err.println("[themoderator] LLM error: " + ex.getMessage());
                 LOGGER.error("[themoderator] LLM error: {}", ex.getMessage());
                 return null;
             });
-        });
 
+        });
         //System.out.println("[themoderator] Initialized.");
         LOGGER.info("[themoderator] Initialized.");
     }
 
-    // Let's register a command to be able to reload configuration file at runtime
-    // Note, we use permission level (2) to make sure only operators can use it
-    private void registerCommands() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(
-                    literal("moderatorreload")
-                            .requires(source -> source.hasPermissionLevel(2))
-                            .executes(context -> {
-                                ConfigLoader.load();
-                                context.getSource().sendFeedback(() -> Text.literal("Moderator-Konfiguration neu geladen."), false);
-                                return 1;
-                            })
-            );
-        });
-    }
 
     private void applyDecision(MinecraftServer server, ModerationDecision decision) {
-
         switch (decision.action()) {
-            case CHAT -> {
-                // Broadcast to all players
-                server.getPlayerManager().broadcast(Text.literal("The Moderator: " + decision.text()), false);
+            case CHAT -> server.getPlayerManager().broadcast(
+                    Text.literal("The Moderator: " + decision.value()),
+                    false
+            );
+
+            case PLAYERLIST -> {
+                Collection<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
+                String list = players.stream()
+                        .map(p -> p.getName().getString())
+                        .collect(Collectors.joining(", "));
+                // Feedback ans LLM
+                String feedback = "Current players: " + list;
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
             }
+
             case WHISPER, WARN, KICK -> {
-                // Get player via playerName
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.playerName());
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
-                    LOGGER.info("[themoderator] Player '{}' not found. Ignored decision: '{}'.", decision.playerName(), decision.action());
+                    String info = "Player '" + decision.value() + "' not found.";
+                    LOGGER.info("[themoderator] {}", info);
+                    LlmClient.sendFeedbackAsync(info)
+                            .thenAccept(dec -> applyDecision(server, dec));
                     return;
                 }
 
                 switch (decision.action()) {
-                    // Chat directly with the specific player
-                    case WHISPER -> player.sendMessage(Text.literal("The Moderator: " + decision.text()), false);
+                    case WHISPER -> player.sendMessage(
+                            Text.literal("The Moderator: " + decision.value2()),
+                            false
+                    );
+
                     case WARN -> {
-                        // Output directly to the specific player only
-                        player.sendMessage(Text.literal("The Moderator: " + ConfigLoader.config.warnMessage + " : " + decision.text()), false);
-                        LOGGER.info("[themoderator]{} : {}", ConfigLoader.config.warnMessage, decision.text());
+                        player.sendMessage(
+                                Text.literal(
+                                        "The Moderator: "
+                                                + ConfigLoader.config.warnMessage
+                                                + " : "
+                                                + decision.value2()
+                                ),
+                                false
+                        );
+                        String feedback = "Warned "
+                                + decision.value()
+                                + " with message: \""
+                                + decision.value2()
+                                + "\"";
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                        LOGGER.info("[themoderator] {} : {}", ConfigLoader.config.warnMessage, decision.value2());
                     }
+
                     case KICK -> {
-                        // Disconnect the player
-                        player.networkHandler.disconnect(Text.literal(ConfigLoader.config.kickMessage + " : " + decision.text()));
-                        LOGGER.info("[themoderator]{} : {}", ConfigLoader.config.kickMessage, decision.text());
+                        player.networkHandler.disconnect(
+                                Text.literal(
+                                        ConfigLoader.config.kickMessage
+                                                + " : "
+                                                + decision.value2()
+                                )
+                        );
+                        String feedback = "Kicked "
+                                + decision.value()
+                                + " with reason: \""
+                                + decision.value2()
+                                + "\"";
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                        LOGGER.info("[themoderator] {} : {}", ConfigLoader.config.kickMessage, decision.value2());
                     }
                 }
             }
+
             case IGNORE -> {
-                // Do nothing
+                // nichts weiter tun
             }
         }
+    }
+
+
+    // Let's register a command to be able to reload configuration file at runtime
+    // Note, we use permission level (2) to make sure only operators can use it
+    private void registerCommands() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
+                literal("moderatorreload")
+                        .requires(source -> source.hasPermissionLevel(2))
+                        .executes(context -> {
+                            ConfigLoader.load();
+                            context.getSource().sendFeedback(() -> Text.literal("Moderator-Konfiguration neu geladen."), false);
+                            return 1;
+                        })
+        ));
+
     }
 }
