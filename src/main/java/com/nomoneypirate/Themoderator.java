@@ -8,15 +8,22 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.stream.Collectors;
-
 import static net.minecraft.server.command.CommandManager.literal;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.BannedPlayerEntry;
+import net.minecraft.server.BannedPlayerList;
+import com.mojang.authlib.GameProfile;
 
 
 public class Themoderator implements ModInitializer {
@@ -102,7 +109,7 @@ public class Themoderator implements ModInitializer {
                         .thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case WHISPER, WARN, KICK -> {
+            case WHISPER, WARN, KICK, BAN -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String info = "Player '" + decision.value() + "' not found.";
@@ -122,8 +129,6 @@ public class Themoderator implements ModInitializer {
                         player.sendMessage(
                                 Text.literal(
                                         "The Moderator: "
-                                                + ConfigLoader.config.warnMessage
-                                                + " : "
                                                 + decision.value2()
                                 ),
                                 false
@@ -135,14 +140,12 @@ public class Themoderator implements ModInitializer {
                                 + "\"";
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info("[themoderator] {} : {}", ConfigLoader.config.warnMessage, decision.value2());
+                        LOGGER.info("[themoderator] {}", feedback);
                     }
 
                     case KICK -> {
                         player.networkHandler.disconnect(
-                                Text.literal(
-                                        ConfigLoader.config.kickMessage
-                                                + " : "
+                                Text.literal("The Moderator: "
                                                 + decision.value2()
                                 )
                         );
@@ -153,13 +156,64 @@ public class Themoderator implements ModInitializer {
                                 + "\"";
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info("[themoderator] {} : {}", ConfigLoader.config.kickMessage, decision.value2());
+                        LOGGER.info("[themoderator] {}", feedback);
+                    }
+
+                    case BAN -> {
+                        if (!ConfigLoader.config.allowBanCommand) {
+                            String feedback = "The BAN command is not available!";
+                            LlmClient.sendFeedbackAsync(feedback)
+                                    .thenAccept(dec -> applyDecision(server, dec));
+                            return;
+                        }
+                        player.networkHandler.disconnect(
+                                Text.literal("The Moderator: "
+                                                + decision.value2()
+                                )
+                        );
+                        if (ConfigLoader.config.useWhitelist) {
+                            // Remove Player of the whitelist
+                            WhitelistEntry entry = server.getPlayerManager().getWhitelist().get(player.getGameProfile());
+                            if (entry != null) {
+                                server.getPlayerManager().getWhitelist().remove(player.getGameProfile());
+                                server.getPlayerManager().reloadWhitelist();
+                            }
+                        }
+                        if (ConfigLoader.config.useBanlist) {
+                            GameProfile profile = player.getGameProfile();
+                            Date now = new Date();
+                            String reason = decision.value2();
+                            String source = "[themoderator]";
+                            Date expiry = null; // null = permanent
+
+                            BannedPlayerEntry entry = new BannedPlayerEntry(
+                                    profile,
+                                    now,
+                                    source,
+                                    expiry,
+                                    reason
+                            );
+                            server.getPlayerManager().getUserBanList().add(entry);
+                            try {
+                                server.getPlayerManager().getUserBanList().save();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        String feedback = "Banned "
+                                + decision.value()
+                                + " with reason: \""
+                                + decision.value2()
+                                + "\"";
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                        LOGGER.info("[themoderator] {}", feedback);
                     }
                 }
             }
 
             case IGNORE -> {
-                // nichts weiter tun
+                // Do nothing
             }
         }
     }
@@ -173,7 +227,7 @@ public class Themoderator implements ModInitializer {
                         .requires(source -> source.hasPermissionLevel(2))
                         .executes(context -> {
                             ConfigLoader.load();
-                            context.getSource().sendFeedback(() -> Text.literal("Moderator-Konfiguration neu geladen."), false);
+                            context.getSource().sendFeedback(() -> Text.literal("[themoderator] Configuration File Reloaded."), false);
                             return 1;
                         })
         ));

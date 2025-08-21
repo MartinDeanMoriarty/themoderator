@@ -104,6 +104,7 @@ public final class LlmClient {
                 case "WHISPER" -> ModerationDecision.Action.WHISPER;
                 case "WARN" -> ModerationDecision.Action.WARN;
                 case "KICK" -> ModerationDecision.Action.KICK;
+                case "BAN" -> ModerationDecision.Action.BAN;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
                 default -> ModerationDecision.Action.IGNORE;

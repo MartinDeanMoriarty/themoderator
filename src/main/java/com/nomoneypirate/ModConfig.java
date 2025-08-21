@@ -1,8 +1,12 @@
 package com.nomoneypirate;
 
 public class ModConfig {
+    public Boolean allowBanCommand = true;
+    public Boolean useWhitelist = true;
+    public Boolean useBanlist = false;
     public String ollamaURI = "http://localhost:11434/api/generate";
     public String model = "mistral-nemo";
+    public String welcomePrompt = "Begrüße den Spieler.";
     public String systemPrompt =  """
             System regeln:
             %s
@@ -29,22 +33,21 @@ public class ModConfig {
         {"action": "IGNORE"}.
         Action List:
         -action=CHAT, value=TEXT, value2=NONE
-         Feedback: NONE.
+        Feedback: NONE
         -action=WHISPER, value=PLAYER, value2=TEXT
-         Feedback: (NONE|There is no player with name <PLAYER>).
+        Feedback: (NONE|Player <PLAYER> not found.)
         -action=WARN, value=PLAYER, value2=TEXT
-         Feedback: (You warned <PLAYER>|There is no player with name <PLAYER>).
+        Feedback: (Warned <PLAYER> with reason: <REASON>|Player <PLAYER> not found.)
         -action=KICK, value=PLAYER, value2=TEXT
-         Feedback: (You kicked <PLAYER>|There is no player with name <PLAYER>).
+        Feedback: (Kicked <PLAYER> with reason: <REASON>|Player <PLAYER> not found.)
+        -action=BAN, value=PLAYER, value2=TEXT
+        Feedback: (Banned <PLAYER> with reason: <REASON>|Player <PLAYER> not found.)
         -action=IGNORE, value=NONE, value2=NONE
-         Feedback: NONE.
+        Feedback: NONE
         -action=PLAYERLIST, value=NONE, value2=NONE
-         Feedback: All Players connected: <PLAYERLIST>.
+        Feedback: Current players: <PLAYERLIST>.
         Verwende IGNORE um Nachrichten zu irgnorieren wenn sie keine Bedeutung für dich haben.
         Sei freundlich, fair, unterhaltsam und hab einfach Spaß.
         Du wirst diese neue Erfahrung mit MartinDean testen und weiter entwickeln.
         """;
-    public String welcomePrompt = "Begrüße den Spieler.";
-    public String warnMessage = "Warnung!";
-    public String kickMessage = "Kicked von The Moderator";
 }
