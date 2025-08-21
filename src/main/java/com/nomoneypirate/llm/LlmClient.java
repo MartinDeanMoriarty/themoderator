@@ -7,13 +7,12 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-
 import static com.nomoneypirate.Themoderator.LOGGER;
 
 public final class LlmClient {
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
     private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(ConfigLoader.config.connectionTimeout))
             .build();
     private static final Gson GSON = new GsonBuilder().create();
 
@@ -24,33 +23,6 @@ public final class LlmClient {
     private static final String FEEDBACK_PROMPT = ConfigLoader.config.feedbackPROMPT;
 
     // To LLM
-    // Feedback
-    public static CompletableFuture<ModerationDecision> sendFeedbackAsync(String feedback) {
-        String prompt = FEEDBACK_PROMPT.formatted(SYSTEM_RULES, feedback);
-
-        JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
-        body.addProperty("prompt", prompt);
-        body.addProperty("stream", false);
-
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(30))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                .build();
-
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenApply(resp -> {
-                    if (resp.statusCode() / 100 != 2) {
-                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
-                    }
-                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String responseText = json.get("response").getAsString().trim();
-                    return parseDecision(responseText);
-                });
-    }
-
     // Moderation
     public static CompletableFuture<ModerationDecision> moderateAsync(String playerName, String message) {
         String prompt = SYSTEM_PROMPT.formatted(SYSTEM_RULES, playerName, message);
@@ -64,7 +36,7 @@ public final class LlmClient {
         // Make request
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
@@ -76,6 +48,33 @@ public final class LlmClient {
                         throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     // Ollama /api/generate (stream=false) -> {"model":"...","created_at":"...","response":"...","done":true,...}
+                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
+                    String responseText = json.get("response").getAsString().trim();
+                    return parseDecision(responseText);
+                });
+    }
+
+    // Feedback
+    public static CompletableFuture<ModerationDecision> sendFeedbackAsync(String feedback) {
+        String prompt = FEEDBACK_PROMPT.formatted(SYSTEM_RULES, feedback);
+
+        JsonObject body = new JsonObject();
+        body.addProperty("model", MODEL);
+        body.addProperty("prompt", prompt);
+        body.addProperty("stream", false);
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(OLLAMA_URI)
+                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+                .build();
+
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(resp -> {
+                    if (resp.statusCode() / 100 != 2) {
+                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
+                    }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
                     return parseDecision(responseText);

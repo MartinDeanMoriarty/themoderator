@@ -13,23 +13,16 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
 import static net.minecraft.server.command.CommandManager.literal;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.BannedPlayerEntry;
-import net.minecraft.server.BannedPlayerList;
 import com.mojang.authlib.GameProfile;
-
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
-
-
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
@@ -48,15 +41,13 @@ public class Themoderator implements ModInitializer {
 
         // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-
             // Get player name
             ServerPlayerEntity player = handler.getPlayer();
             String playerName = player.getName().getString();
 
-            String welcomePrompt = ConfigLoader.config.welcomePrompt;
-
+            String welcomeText = ConfigLoader.config.welcomeText;
             // Asynchronous to the LLM
-            LlmClient.moderateAsync(playerName, welcomePrompt).thenAccept(decision -> {
+            LlmClient.moderateAsync(playerName, welcomeText).thenAccept(decision -> {
                 // Back to the server thread
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
@@ -70,7 +61,6 @@ public class Themoderator implements ModInitializer {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             MinecraftServer server = sender.getServer();
             if (server == null) return;
-
             // Get player name and chat content
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
@@ -84,12 +74,10 @@ public class Themoderator implements ModInitializer {
                 LOGGER.error("[themoderator] LLM error: {}", ex.getMessage());
                 return null;
             });
-
         });
         //System.out.println("[themoderator] Initialized.");
         LOGGER.info("[themoderator] Initialized.");
     }
-
 
     private void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
@@ -161,7 +149,7 @@ public class Themoderator implements ModInitializer {
 
                     case BAN -> {
                         if (!ConfigLoader.config.allowBanCommand) {
-                            String feedback = "The BAN command is not available!";
+                            String feedback = "The BAN command is not available.";
                             LlmClient.sendFeedbackAsync(feedback)
                                     .thenAccept(dec -> applyDecision(server, dec));
                             return;
@@ -218,7 +206,6 @@ public class Themoderator implements ModInitializer {
         }
     }
 
-
     // Let's register a command to be able to reload configuration file at runtime
     // Note, we use permission level (2) to make sure only operators can use it
     private void registerCommands() {
@@ -231,6 +218,6 @@ public class Themoderator implements ModInitializer {
                             return 1;
                         })
         ));
-
     }
+
 }
