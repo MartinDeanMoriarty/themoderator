@@ -104,7 +104,7 @@ public class Themoderator implements ModInitializer {
                         .thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case SPWANAVATAR -> {
+            case SPAWNAVATAR -> {
                 String feedback = "";
                 int x = 0;
                 int z = 0;
@@ -119,6 +119,19 @@ public class Themoderator implements ModInitializer {
                     feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + x + "  " + z;
                 } else {
                     feedback = "Spawning was not possible.";
+                }
+                // Feedback
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case DESPAWNAVATAR -> {
+                String feedback = "";
+
+                if (despawnModeratorAvatar(server.getOverworld())) {
+                    feedback = "Avatar despawned.";
+                } else {
+                    feedback = "No Avatar to despawn.";
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -289,6 +302,7 @@ public class Themoderator implements ModInitializer {
             LOGGER.info("[themoderator] Avatar despawned.");
         } else {
             LOGGER.info("[themoderator] No Avatar to despawn.");
+            return false;
         }
         return true;
     }

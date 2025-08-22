@@ -61,6 +61,8 @@ public class ModConfig {
         Feedback: Current players: <PLAYERLIST>.
         -action=SPAWNAVATAR, value=(CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG), value2=COORDS ->are represented only as x and z
         Feedback: (Avatar spawned as (CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG) at <x z>.|Spawning was not possible.).
+        -action=DESPAWNAVATAR, value=NONE, value2=NONE
+        Feedback: (Avatar despawned.|No Avatar to despawn.)
         -COORDS to remember:
         Spawn: 0 0;
         
