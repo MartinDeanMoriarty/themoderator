@@ -3,8 +3,6 @@ package com.nomoneypirate.llm;
 import com.google.gson.*;
 import com.nomoneypirate.ConfigLoader;
 import net.fabricmc.loader.api.FabricLoader;
-
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.http.*;
 import java.net.URI;
@@ -54,7 +52,7 @@ public final class LlmClient {
 
         // Input logging
         String jsonBody = GSON.toJson(body);
-        logToFile("ollama_request.log", "[" + timestamp + "] Request:\n" + jsonBody);
+        logToFile("ollama_llm.log", "[" + timestamp + "] Request:\n" + jsonBody);
 
         // Get response
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
@@ -66,7 +64,7 @@ public final class LlmClient {
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
                     // Output logging
-                    logToFile("ollama_response.log", "[" + timestamp + "] Response:\n" + responseText);
+                    logToFile("ollama_llm.log", "[" + timestamp + "] Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
     }
