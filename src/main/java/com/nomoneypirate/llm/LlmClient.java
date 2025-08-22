@@ -2,10 +2,19 @@ package com.nomoneypirate.llm;
 
 import com.google.gson.*;
 import com.nomoneypirate.ConfigLoader;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.http.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 import static com.nomoneypirate.Themoderator.LOGGER;
 
@@ -27,6 +36,8 @@ public final class LlmClient {
     public static CompletableFuture<ModerationDecision> moderateAsync(String playerName, String message) {
         String prompt = SYSTEM_PROMPT.formatted(SYSTEM_RULES, playerName, message);
 
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
         // build json
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);
@@ -41,6 +52,10 @@ public final class LlmClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
 
+        // Input logging
+        String jsonBody = GSON.toJson(body);
+        logToFile("ollama_request.log", "[" + timestamp + "] Request:\n" + jsonBody);
+
         // Get response
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
@@ -50,8 +65,21 @@ public final class LlmClient {
                     // Ollama /api/generate (stream=false) -> {"model":"...","created_at":"...","response":"...","done":true,...}
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
+                    // Output logging
+                    logToFile("ollama_response.log", "[" + timestamp + "] Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
+    }
+
+    private static void logToFile(String filename, String content) {
+        Path logDir = FabricLoader.getInstance().getGameDir().resolve("logs");
+        Path logFile = logDir.resolve(filename);
+        try {
+            Files.createDirectories(logDir);
+            Files.writeString(logFile, content + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // Feedback
