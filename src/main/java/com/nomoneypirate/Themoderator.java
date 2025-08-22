@@ -295,11 +295,11 @@ public class Themoderator implements ModInitializer {
                                                                     );
 
                                                                     ctx.getSource().sendFeedback(
-                                                                            () -> Text.literal("Moderator-Avatar gespawnt: " + type),
+                                                                            () -> Text.literal("Avatar spawned as: "+ type +". At: X- " +pos.getX()+ " Y- " +pos.getY()+ " Z- " +pos.getZ()),
                                                                             false
                                                                     );
                                                                 } else {
-                                                                    ctx.getSource().sendError(Text.literal("Fehler beim Erstellen des Avatars."));
+                                                                    ctx.getSource().sendError(Text.literal("Spawning was not possible."));
                                                                 }
                                                                 return 1;
                                                             })
