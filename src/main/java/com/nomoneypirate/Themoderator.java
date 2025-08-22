@@ -1,5 +1,7 @@
 package com.nomoneypirate;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
 import net.fabricmc.api.ModInitializer;
@@ -10,19 +12,26 @@ import net.minecraft.entity.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
+    private static UUID currentMobId = null;
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
@@ -209,7 +218,9 @@ public class Themoderator implements ModInitializer {
     // Let's register a command to be able to reload configuration file at runtime
     // Note, we use permission level (2) to make sure only operators can use it
     private void registerCommands() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+
+                dispatcher.register(
                 literal("moderatorreload")
                         .requires(source -> source.hasPermissionLevel(2))
                         .executes(context -> {
@@ -217,7 +228,103 @@ public class Themoderator implements ModInitializer {
                             context.getSource().sendFeedback(() -> Text.literal("[themoderator] Configuration File Reloaded."), false);
                             return 1;
                         })
-        ));
+                )
+
+
+        );
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+
+            // === Spawn Command ===
+            dispatcher.register(
+                    literal("spawnavatar")
+                            .then(argument("type", StringArgumentType.word())
+                                    .then(argument("x", DoubleArgumentType.doubleArg())
+                                            .then(argument("y", DoubleArgumentType.doubleArg())
+                                                    .then(argument("z", DoubleArgumentType.doubleArg())
+                                                            .executes(ctx -> {
+                                                                String type = StringArgumentType.getString(ctx, "type")
+                                                                        .toUpperCase(Locale.ROOT);
+                                                                double x = DoubleArgumentType.getDouble(ctx, "x");
+                                                                double y = DoubleArgumentType.getDouble(ctx, "y");
+                                                                double z = DoubleArgumentType.getDouble(ctx, "z");
+
+                                                                ServerWorld world = ctx.getSource().getWorld();
+
+                                                                // Alten Avatar entfernen
+                                                                if (currentMobId != null) {
+                                                                    Entity old = world.getEntity(currentMobId);
+                                                                    if (old != null) old.discard();
+                                                                    currentMobId = null;
+                                                                }
+
+                                                                // Mob-Typ bestimmen
+                                                                EntityType<?> entityType = switch (type) {
+                                                                    case "CHICKEN" -> EntityType.CHICKEN;
+                                                                    case "COW" -> EntityType.COW;
+                                                                    case "PIG" -> EntityType.PIG;
+                                                                    case "HORSE" -> EntityType.HORSE;
+                                                                    case "SHEEP" -> EntityType.SHEEP;
+                                                                    case "GOAT" -> EntityType.GOAT;
+                                                                    case "FROG" -> EntityType.FROG;
+                                                                    default -> null;
+                                                                };
+
+                                                                if (entityType == null) {
+                                                                    ctx.getSource().sendError(Text.literal("Ungültiger Avatar-Typ: " + type));
+                                                                    return 0;
+                                                                }
+
+                                                                BlockPos pos = BlockPos.ofFloored(x, y, z);
+
+                                                                Entity entity = entityType.create(
+                                                                        world,
+                                                                        null
+                                                                );
+
+                                                                if (entity != null) {
+                                                                    entity.setInvulnerable(true);
+
+                                                                    if (entity instanceof LivingEntity living) {
+                                                                        living.getBrain().forgetAll();
+                                                                    }
+
+                                                                    world.spawnEntity(entity);
+                                                                    currentMobId = entity.getUuid();
+                                                                    ctx.getSource().sendFeedback(
+                                                                            () -> Text.literal("Moderator-Avatar gespawnt: " + type),
+                                                                            false
+                                                                    );
+                                                                } else {
+                                                                    ctx.getSource().sendError(Text.literal("Fehler beim Erstellen des Avatars."));
+                                                                }
+                                                                return 1;
+                                                            })
+                                                    )
+                                            )
+                                    )
+                            )
+            );
+
+            // === Despawn Command ===
+            dispatcher.register(
+                    literal("despawnavatar")
+                            .executes(ctx -> {
+                                ServerWorld world = ctx.getSource().getWorld();
+                                if (currentMobId != null) {
+                                    Entity e = world.getEntity(currentMobId);
+                                    if (e != null) e.discard();
+                                    currentMobId = null;
+                                    ctx.getSource().sendFeedback(() -> Text.literal("Avatar entfernt."), false);
+                                } else {
+                                    ctx.getSource().sendError(Text.literal("Kein Avatar vorhanden."));
+                                }
+                                return 1;
+                            })
+            );
+
+        });
+
     }
 
 }
