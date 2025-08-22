@@ -236,8 +236,7 @@ public class Themoderator implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 
             // === Spawn Command ===
-            dispatcher.register(
-                    literal("spawnavatar")
+            dispatcher.register(literal("spawnavatar")
                             .then(argument("type", StringArgumentType.word())
                                     .then(argument("x", DoubleArgumentType.doubleArg())
                                             .then(argument("y", DoubleArgumentType.doubleArg())
@@ -271,18 +270,20 @@ public class Themoderator implements ModInitializer {
                                                                 };
 
                                                                 if (entityType == null) {
-                                                                    ctx.getSource().sendError(Text.literal("Ungültiger Avatar-Typ: " + type));
+                                                                    ctx.getSource().sendError(Text.literal("Invalid avatar-type: " + type));
                                                                     return 0;
                                                                 }
 
                                                                 BlockPos pos = BlockPos.ofFloored(x, y, z);
 
-                                                                Entity entity = entityType.create(world,
-                                                                        null
-                                                                );
+                                                                Entity entity = entityType.create(world, null);
 
                                                                 if (entity != null) {
                                                                     entity.setInvulnerable(true);
+
+                                                                    world.spawnEntity(entity);
+                                                                    entity.refreshPositionAndAngles(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
+                                                                    currentMobId = entity.getUuid();
 
                                                                     ctx.getSource().getServer().getCommandManager().executeWithPrefix(
                                                                             ctx.getSource(),
@@ -293,9 +294,6 @@ public class Themoderator implements ModInitializer {
                                                                             "data merge entity " + entity.getUuidAsString() + " {CustomName:'{\"text\":\"The Moderator\"}', CustomNameVisible:1b}"
                                                                     );
 
-                                                                    world.spawnEntity(entity);
-                                                                    entity.refreshPositionAndAngles(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
-                                                                    currentMobId = entity.getUuid();
                                                                     ctx.getSource().sendFeedback(
                                                                             () -> Text.literal("Moderator-Avatar gespawnt: " + type),
                                                                             false
