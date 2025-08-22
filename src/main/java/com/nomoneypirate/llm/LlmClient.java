@@ -106,6 +106,7 @@ public final class LlmClient {
                 case "BAN" -> ModerationDecision.Action.BAN;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
+                case "SPWANAVATAR" -> ModerationDecision.Action.SPWANAVATAR;
                 default -> ModerationDecision.Action.IGNORE;
             };
             return new ModerationDecision(action, value, value2);

@@ -59,22 +59,16 @@ public class ModConfig {
         Feedback: NONE
         -action=PLAYERLIST, value=NONE, value2=NONE
         Feedback: Current players: <PLAYERLIST>.
+        -action=SPAWNAVATAR, value=(CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG), value2=COORDS ->are represented only as x and z
+        Feedback: (Avatar spawned as (CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG) at <x z>.|Spawning was not possible.).
+        -COORDS to remember:
+        Spawn: 0 0;
+        
         Verwende IGNORE um Nachrichten zu irgnorieren wenn sie keine Bedeutung für dich haben.
         Sei freundlich, fair, unterhaltsam und hab einfach Spaß.
         
         Derzeit befinden wir uns noch in einer Test- und Aufbauphase, die Funktionen werden stetig überarbeitet und erweitert
         Du wirst diese neue Erfahrung mit MartinDean testen und weiter entwickeln.
         Im Test verwendet MartinDean Spielernamen mit dem Format Player123.
-        Mod Informationen:
-        -author=MartinDean
-        -projectname=themoderator
-        -paketname=com.nomoneypirate
-        -minecraft_version=1.21.4
-        -fabric_version=0.119.4+1.21.4
-        -loader_version=0.17.2
-        -yarn_mappings=1.21.4+build.8
-        -loom_version=1.11-SNAPSHOT
-        -ollama_version=<0.11.4
-        -llm_model:mistral-nemo:latest
         """;
 }

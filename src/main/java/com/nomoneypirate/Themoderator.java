@@ -15,13 +15,11 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Heightmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.minecraft.server.command.CommandManager.argument;
@@ -102,6 +100,27 @@ public class Themoderator implements ModInitializer {
                         .collect(Collectors.joining(", "));
                 // Feedback ans LLM
                 String feedback = "Current players: " + list;
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case SPWANAVATAR -> {
+                String feedback = "";
+                int x = 0;
+                int z = 0;
+
+                List<String> values = Collections.singletonList(decision.value2());
+                if (decision.value2() != null && !decision.value2().isEmpty()) {
+                    x = Integer.parseInt(values.getFirst());
+                    z = Integer.parseInt(values.getLast());
+                }
+                //MinecraftServer server = world.getServer();
+                if (spawnModeratorAvatar(server.getOverworld(), decision.value(),x,z)) {
+                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + x + "  " + z;
+                } else {
+                    feedback = "Spawning was not possible.";
+                }
+                // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
@@ -215,6 +234,66 @@ public class Themoderator implements ModInitializer {
         }
     }
 
+    public static boolean spawnModeratorAvatar(ServerWorld world, String type, int x, int z) {
+        // Check for ground position
+        BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
+
+        // Remove old Avatar
+        if (currentMobId != null) {
+            Entity old = world.getEntity(currentMobId);
+            if (old != null) old.discard();
+            currentMobId = null;
+        }
+
+        // Mob-Typ
+        EntityType<?> entityType = switch (type.toUpperCase(Locale.ROOT)) {
+            case "CHICKEN" -> EntityType.CHICKEN;
+            case "COW" -> EntityType.COW;
+            case "PIG" -> EntityType.PIG;
+            case "HORSE" -> EntityType.HORSE;
+            case "SHEEP" -> EntityType.SHEEP;
+            case "GOAT" -> EntityType.GOAT;
+            case "FROG" -> EntityType.FROG;
+            default -> null;
+        };
+
+        if (entityType == null) return false;
+
+        Entity entity = entityType.create(world, null);
+        if (entity == null) return false;
+
+        //Invulnerable
+        entity.setInvulnerable(true);
+        //Set to ground
+        entity.refreshPositionAndAngles(groundPos.getX(), groundPos.getY(), groundPos.getZ(), 0, 0);
+        world.spawnEntity(entity);
+        currentMobId = entity.getUuid();
+
+        // NoAI
+        entity.getCommandSource(world).getServer().getCommandManager().executeWithPrefix(
+                entity.getCommandSource(world), "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
+        );
+
+        // CustomName
+        entity.setCustomName(Text.literal("The Moderator"));
+        entity.setCustomNameVisible(true);
+
+        return true;
+    }
+
+    public static boolean despawnModeratorAvatar(ServerWorld world) {
+        if (currentMobId != null) {
+            Entity e = world.getEntity(currentMobId);
+            if (e != null) e.discard();
+            currentMobId = null;
+            LOGGER.info("[themoderator] Avatar despawned.");
+        } else {
+            LOGGER.info("[themoderator] No Avatar to despawn.");
+        }
+        return true;
+    }
+
+
     // Let's register a command to be able to reload configuration file at runtime
     // Note, we use permission level (2) to make sure only operators can use it
     private void registerCommands() {
@@ -245,10 +324,11 @@ public class Themoderator implements ModInitializer {
                                                                 String type = StringArgumentType.getString(ctx, "type")
                                                                         .toUpperCase(Locale.ROOT);
                                                                 double x = DoubleArgumentType.getDouble(ctx, "x");
-                                                                double y = DoubleArgumentType.getDouble(ctx, "y");
                                                                 double z = DoubleArgumentType.getDouble(ctx, "z");
 
                                                                 ServerWorld world = ctx.getSource().getWorld();
+                                                                // Check for ground position
+                                                                BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos((int)x, 0, (int)z));
 
                                                                 // Remove old avatar
                                                                 if (currentMobId != null) {
@@ -274,15 +354,13 @@ public class Themoderator implements ModInitializer {
                                                                     return 0;
                                                                 }
 
-                                                                BlockPos pos = BlockPos.ofFloored(x, y, z);
-
                                                                 Entity entity = entityType.create(world, null);
 
                                                                 if (entity != null) {
                                                                     entity.setInvulnerable(true);
 
                                                                     world.spawnEntity(entity);
-                                                                    entity.refreshPositionAndAngles(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
+                                                                    entity.refreshPositionAndAngles(groundPos.getX(), groundPos.getY(), groundPos.getZ(), 0, 0);
                                                                     currentMobId = entity.getUuid();
 
                                                                     ctx.getSource().getServer().getCommandManager().executeWithPrefix(
@@ -295,7 +373,7 @@ public class Themoderator implements ModInitializer {
                                                                     );
 
                                                                     ctx.getSource().sendFeedback(
-                                                                            () -> Text.literal("Avatar spawned as: "+ type +". At: X- " +pos.getX()+ " Y- " +pos.getY()+ " Z- " +pos.getZ()),
+                                                                            () -> Text.literal("Avatar spawned as: "+ type +". At: X- " +groundPos.getX()+ " Y- " +groundPos.getY()+ " Z- " +groundPos.getZ()),
                                                                             false
                                                                     );
                                                                 } else {
