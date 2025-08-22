@@ -109,10 +109,10 @@ public class Themoderator implements ModInitializer {
                 int x = 0;
                 int z = 0;
 
-                List<String> values = Collections.singletonList(decision.value2());
-                if (decision.value2() != null && !decision.value2().isEmpty()) {
-                    x = Integer.parseInt(values.getFirst());
-                    z = Integer.parseInt(values.getLast());
+                List<Integer> values = Collections.singletonList(Integer.valueOf(decision.value2()));
+                if (!decision.value2().isEmpty()) {
+                    x = values.getFirst();
+                    z = values.getLast();
                 }
                 //MinecraftServer server = world.getServer();
                 if (spawnModeratorAvatar(server.getOverworld(), decision.value(),x,z)) {
