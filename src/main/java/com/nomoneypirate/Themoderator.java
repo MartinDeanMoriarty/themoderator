@@ -288,6 +288,10 @@ public class Themoderator implements ModInitializer {
                                                                             ctx.getSource(),
                                                                             "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
                                                                     );
+                                                                    ctx.getSource().getServer().getCommandManager().executeWithPrefix(
+                                                                            ctx.getSource(),
+                                                                            "data merge entity " + entity.getUuidAsString() + " {CustomName:'{\"text\":\"The Moderator\"}', CustomNameVisible:1b}"
+                                                                    );
 
                                                                     world.spawnEntity(entity);
                                                                     entity.refreshPositionAndAngles(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
