@@ -251,14 +251,14 @@ public class Themoderator implements ModInitializer {
 
                                                                 ServerWorld world = ctx.getSource().getWorld();
 
-                                                                // Alten Avatar entfernen
+                                                                // Remove old avatar
                                                                 if (currentMobId != null) {
                                                                     Entity old = world.getEntity(currentMobId);
                                                                     if (old != null) old.discard();
                                                                     currentMobId = null;
                                                                 }
 
-                                                                // Mob-Typ bestimmen
+                                                                // Mob-Type
                                                                 EntityType<?> entityType = switch (type) {
                                                                     case "CHICKEN" -> EntityType.CHICKEN;
                                                                     case "COW" -> EntityType.COW;
@@ -286,10 +286,11 @@ public class Themoderator implements ModInitializer {
                                                                     entity.setInvulnerable(true);
 
                                                                     if (entity instanceof LivingEntity living) {
-                                                                        living.getBrain().forgetAll();
+                                                                        //entity.getDataTracker().set(LivingEntity, true);
                                                                     }
 
                                                                     world.spawnEntity(entity);
+                                                                    entity.refreshPositionAndAngles(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
                                                                     currentMobId = entity.getUuid();
                                                                     ctx.getSource().sendFeedback(
                                                                             () -> Text.literal("Moderator-Avatar gespawnt: " + type),
