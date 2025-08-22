@@ -277,17 +277,17 @@ public class Themoderator implements ModInitializer {
 
                                                                 BlockPos pos = BlockPos.ofFloored(x, y, z);
 
-                                                                Entity entity = entityType.create(
-                                                                        world,
+                                                                Entity entity = entityType.create(world,
                                                                         null
                                                                 );
 
                                                                 if (entity != null) {
                                                                     entity.setInvulnerable(true);
 
-                                                                    if (entity instanceof LivingEntity living) {
-                                                                        //entity.getDataTracker().set(LivingEntity, true);
-                                                                    }
+                                                                    ctx.getSource().getServer().getCommandManager().executeWithPrefix(
+                                                                            ctx.getSource(),
+                                                                            "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
+                                                                    );
 
                                                                     world.spawnEntity(entity);
                                                                     entity.refreshPositionAndAngles(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
