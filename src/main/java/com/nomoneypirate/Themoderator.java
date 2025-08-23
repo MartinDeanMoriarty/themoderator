@@ -7,6 +7,7 @@ import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
@@ -39,15 +40,19 @@ public class Themoderator implements ModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	@Override
+    @Override
 	public void onInitialize() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-        //Load configuration file
+        // Register onServerStarted Event
+        // Currently only used to despawn a moderator mob that was not despawned
+        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+
+        // Load configuration file
         ConfigLoader.load();
-        //Register mod commands
+        // Register mod commands
         registerCommands();
 
         // Intercept player join messages (server-side)
@@ -88,6 +93,18 @@ public class Themoderator implements ModInitializer {
         });
         //System.out.println("[themoderator] Initialized.");
         LOGGER.info("[themoderator] Initialized.");
+    }
+
+    private void onServerStarted(MinecraftServer server) {
+        for (ServerWorld world : server.getWorlds()) {
+            // Iterate all entities in the world
+            for (Entity entity : world.iterateEntities()) {
+                if (entity.hasCustomName() && "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString())) {
+                    entity.remove(Entity.RemovalReason.DISCARDED);
+                    System.out.println("Entity 'The Moderator' wurde entfernt.");
+                }
+            }
+        }
     }
 
     private void applyDecision(MinecraftServer server, ModerationDecision decision) {
