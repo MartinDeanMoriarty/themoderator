@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -144,7 +145,6 @@ public class Themoderator implements ModInitializer {
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
-                System.out.println("[themoderator] Avatar Spawned.");
             }
 
             case DESPAWNAVATAR -> {
@@ -287,6 +287,16 @@ public class Themoderator implements ModInitializer {
         // Check for ground position
         BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
 
+        // Remove every Mob named "The Moderator"
+        for (Entity entity : world.iterateEntities()) {
+            if (entity.hasCustomName() &&
+                    "The Moderator".equals(entity.getCustomName().getString()) &&
+                    !(entity instanceof PlayerEntity)) {
+
+                entity.discard(); // Remove Entity
+                LOGGER.info("[themoderator] Removed lingering entity: " + entity.getType().toString());
+            }
+        }
         // Remove old Avatar
         if (currentMobId != null) {
             Entity old = world.getEntity(currentMobId);
@@ -340,6 +350,21 @@ public class Themoderator implements ModInitializer {
 
 
     public static boolean despawnModeratorAvatar(ServerWorld world) {
+        boolean found = false;
+
+        // Remove every Mob named "The Moderator"
+        for (Entity entity : world.iterateEntities()) {
+            if (entity.hasCustomName() &&
+                    "The Moderator".equals(entity.getCustomName().getString()) &&
+                    !(entity instanceof PlayerEntity)) {
+
+                entity.discard(); // Remove Entity
+                found = true;
+                LOGGER.info("[themoderator] Removed lingering entity: " + entity.getType().toString());
+            }
+        }
+
+        // Remove registered Mob
         if (currentMobId != null) {
             Entity e = world.getEntity(currentMobId);
             if (e != null) e.discard();
@@ -348,11 +373,12 @@ public class Themoderator implements ModInitializer {
             currentMobPosX = null;
             currentMobPosZ = null;
             LOGGER.info("[themoderator] Avatar despawned.");
+            found = true;
         } else {
             LOGGER.info("[themoderator] No Avatar to despawn.");
-            return false;
         }
-        return true;
+
+        return found;
     }
 
     public static String whereIs(ServerWorld world, String name, UUID currentMobUuid) {

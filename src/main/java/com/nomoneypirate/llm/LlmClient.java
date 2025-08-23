@@ -84,6 +84,8 @@ public final class LlmClient {
     public static CompletableFuture<ModerationDecision> sendFeedbackAsync(String feedback) {
         String prompt = FEEDBACK_PROMPT.formatted(SYSTEM_RULES, feedback);
 
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);
         body.addProperty("prompt", prompt);
@@ -96,6 +98,10 @@ public final class LlmClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
 
+        // Input logging
+        String jsonBody = GSON.toJson(body);
+        logToFile("ollama_llm.log", "[" + timestamp + "] Request:\n" + jsonBody);
+
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
@@ -103,6 +109,8 @@ public final class LlmClient {
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
+                    // Output logging
+                    logToFile("ollama_llm.log", "[" + timestamp + "] Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
     }
