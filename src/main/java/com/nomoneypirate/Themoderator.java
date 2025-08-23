@@ -144,6 +144,7 @@ public class Themoderator implements ModInitializer {
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
+                System.out.println("[themoderator] Avatar Spawned.");
             }
 
             case DESPAWNAVATAR -> {
