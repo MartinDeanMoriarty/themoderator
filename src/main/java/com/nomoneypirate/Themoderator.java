@@ -115,11 +115,21 @@ public class Themoderator implements ModInitializer {
                 currentMobPosX = 0;
                 currentMobPosZ = 0;
 
-                List<Integer> values = Collections.singletonList(Integer.valueOf(decision.value2()));
                 if (!decision.value2().isEmpty()) {
-                    currentMobPosX = values.getFirst();
-                    currentMobPosZ = values.getLast();
+                    String[] parts = decision.value2().trim().split("\\s+"); // Trenne bei einem oder mehreren Leerzeichen
+                    if (parts.length == 2) {
+                        try {
+                            currentMobPosX = Integer.parseInt(parts[0]);
+                            currentMobPosZ = Integer.parseInt(parts[1]);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Ungültige Koordinaten: " + decision.value2());
+                            e.printStackTrace();
+                        }
+                    } else {
+                        System.err.println("Erwartet zwei Werte, aber gefunden: " + decision.value2());
+                    }
                 }
+
                 //MinecraftServer server = world.getServer();
                 if (spawnModeratorAvatar(server.getOverworld(), decision.value(),currentMobPosX,currentMobPosZ)) {
                     feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + currentMobPosX + "  " + currentMobPosZ;
