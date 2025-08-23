@@ -15,6 +15,9 @@ public class ModConfig {
     public Integer responseTimeout = 30;
     // The name of the model used to generate
     public String model = "mistral-nemo";
+    // LLM Logging
+    public Boolean llmLogging = true;
+    public String logFilename = "themoderator_llm.log";
     // This is sent to the llm when a player connects to the server
     public String welcomeText = "Begrüße den Spieler.";
     // The following prompts are important to llm communication

@@ -112,7 +112,7 @@ public class Themoderator implements ModInitializer {
             }
 
             case SPAWNAVATAR -> {
-                String feedback = "";
+                String feedback;
                 currentMobPosX = 0;
                 currentMobPosZ = 0;
 
@@ -148,7 +148,7 @@ public class Themoderator implements ModInitializer {
             }
 
             case DESPAWNAVATAR -> {
-                String feedback = "";
+                String feedback;
 
                 if (despawnModeratorAvatar(server.getOverworld())) {
                     feedback = "Avatar despawned.";
@@ -290,11 +290,11 @@ public class Themoderator implements ModInitializer {
         // Remove every Mob named "The Moderator"
         for (Entity entity : world.iterateEntities()) {
             if (entity.hasCustomName() &&
-                    "The Moderator".equals(entity.getCustomName().getString()) &&
+                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
                     !(entity instanceof PlayerEntity)) {
 
                 entity.discard(); // Remove Entity
-                LOGGER.info("[themoderator] Removed lingering entity: " + entity.getType().toString());
+                LOGGER.info("[themoderator] Removed lingering entity: {}", entity.getType().toString());
             }
         }
         // Remove old Avatar
@@ -355,12 +355,12 @@ public class Themoderator implements ModInitializer {
         // Remove every Mob named "The Moderator"
         for (Entity entity : world.iterateEntities()) {
             if (entity.hasCustomName() &&
-                    "The Moderator".equals(entity.getCustomName().getString()) &&
+                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
                     !(entity instanceof PlayerEntity)) {
 
                 entity.discard(); // Remove Entity
                 found = true;
-                LOGGER.info("[themoderator] Removed lingering entity: " + entity.getType().toString());
+                LOGGER.info("[themoderator] Removed lingering entity: {}", entity.getType().toString());
             }
         }
 
