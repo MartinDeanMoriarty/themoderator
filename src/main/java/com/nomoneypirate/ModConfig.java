@@ -65,6 +65,8 @@ public class ModConfig {
         Feedback: (Avatar spawned as (CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG) at <x z>.|Spawning was not possible.).
         -action=DESPAWNAVATAR, value=NONE, value2=NONE
         Feedback: (Avatar despawned.|No Avatar to despawn.)
+        -action=WHEREIS, value=(PLAYER|ME)
+        Feedback: (Player <PLAYER> is at <COORDS>.|Your <AVATAR> is at <COORDS>.|Entity not found. )
         -COORDS to remember:
         Spawn: 0 0;
         Verwende IGNORE um Nachrichten zu irgnorieren wenn sie keine Bedeutung für dich haben.

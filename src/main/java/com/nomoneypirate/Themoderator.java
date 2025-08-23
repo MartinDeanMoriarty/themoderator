@@ -12,7 +12,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -25,11 +24,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
+
+import javax.swing.*;
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
@@ -136,6 +136,20 @@ public class Themoderator implements ModInitializer {
                     feedback = "Avatar despawned.";
                 } else {
                     feedback = "No Avatar to despawn.";
+                }
+                // Feedback
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case WHEREIS -> {
+                String feedback = "";
+
+                if (Objects.equals(decision.value(), "PLAYER")) {
+                    feedback = whereIs(server.getOverworld(), decision.value(), null);
+                }
+                if (Objects.equals(decision.value(), "ME")) {
+                    feedback = whereIs(server.getOverworld(), "", currentMobId);
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -302,21 +316,6 @@ public class Themoderator implements ModInitializer {
         return true;
     }
 
-    public static void makeMobFollowPlayer(ServerWorld world, UUID mobId, String playerName) {
-        Entity entity = world.getEntity(mobId);
-        PathAwareEntity pae = (PathAwareEntity) entity;
-        if (!(entity instanceof MobEntity mob)) return;
-
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
-        if (player == null) return;
-
-        // Access GoalSelector via Mixin
-        GoalSelector goalSelector = ((MobEntityAccessor) mob).getGoalSelector();
-        goalSelector.getGoals().clear(); // Optional: alte Ziele entfernen
-
-        // Follow-Goal
-        goalSelector.add(1, new FollowPlayerGoal(mob, player, 1.0));
-    }
 
     public static boolean despawnModeratorAvatar(ServerWorld world) {
         if (currentMobId != null) {
@@ -329,6 +328,42 @@ public class Themoderator implements ModInitializer {
             return false;
         }
         return true;
+    }
+
+    public static String whereIs(ServerWorld world, String name, UUID currentMobUuid) {
+        // Player
+        if (name.isEmpty() && currentMobUuid == null) {
+            return "No entity specified.";
+        }
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(name);
+        if (player != null) {
+            BlockPos pos = player.getBlockPos();
+            return String.format("Player '%s' is at X: %d, Y: %d, Z: %d", name, pos.getX(), pos.getY(), pos.getZ());
+        }
+
+        // Moderator mob
+        Entity entity = Objects.requireNonNull(world.getServer().getWorld(world.getRegistryKey())).getEntity(currentMobUuid);
+        if (entity != null) {
+            BlockPos pos = entity.getBlockPos();
+            return String.format("Your '%s' is at X: %d, Y: %d, Z: %d", entity.getName().getString(), pos.getX(), pos.getY(), pos.getZ());
+        }
+        return "Entity not found.";
+    }
+
+
+    public static void makeMobFollowPlayer(ServerWorld world, UUID mobId, String playerName) {
+        Entity entity = world.getEntity(mobId);
+        if (!(entity instanceof MobEntity mob)) return;
+
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        if (player == null) return;
+
+        // Access GoalSelector via Mixin
+        GoalSelector goalSelector = ((MobEntityAccessor) mob).getGoalSelector();
+        goalSelector.getGoals().clear(); // Clear all goals
+
+        // Follow-Goal
+        goalSelector.add(1, new FollowPlayerGoal(mob, player, 1.0));
     }
 
 
