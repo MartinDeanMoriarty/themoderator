@@ -7,7 +7,6 @@ import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
@@ -29,12 +28,14 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
-
 import javax.swing.*;
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
     private static UUID currentMobId = null;
+    private static Integer currentMobPosX = null;
+    private static Integer currentMobPosZ = null;
+
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
@@ -45,10 +46,6 @@ public class Themoderator implements ModInitializer {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
-
-        // Register onServerStarted Event
-        // Currently only used to despawn a moderator mob that was not despawned
-        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
 
         // Load configuration file
         ConfigLoader.load();
@@ -95,18 +92,6 @@ public class Themoderator implements ModInitializer {
         LOGGER.info("[themoderator] Initialized.");
     }
 
-    private void onServerStarted(MinecraftServer server) {
-        for (ServerWorld world : server.getWorlds()) {
-            // Iterate all entities in the world
-            for (Entity entity : world.iterateEntities()) {
-                if (entity.hasCustomName() && "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString())) {
-                    entity.remove(Entity.RemovalReason.DISCARDED);
-                    System.out.println("Entity 'The Moderator' wurde entfernt.");
-                }
-            }
-        }
-    }
-
     private void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
             case CHAT -> server.getPlayerManager().broadcast(
@@ -127,17 +112,17 @@ public class Themoderator implements ModInitializer {
 
             case SPAWNAVATAR -> {
                 String feedback = "";
-                int x = 0;
-                int z = 0;
+                currentMobPosX = 0;
+                currentMobPosZ = 0;
 
                 List<Integer> values = Collections.singletonList(Integer.valueOf(decision.value2()));
                 if (!decision.value2().isEmpty()) {
-                    x = values.getFirst();
-                    z = values.getLast();
+                    currentMobPosX = values.getFirst();
+                    currentMobPosZ = values.getLast();
                 }
                 //MinecraftServer server = world.getServer();
-                if (spawnModeratorAvatar(server.getOverworld(), decision.value(),x,z)) {
-                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + x + "  " + z;
+                if (spawnModeratorAvatar(server.getOverworld(), decision.value(),currentMobPosX,currentMobPosZ)) {
+                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + currentMobPosX + "  " + currentMobPosZ;
                 } else {
                     feedback = "Spawning was not possible.";
                 }
@@ -291,6 +276,9 @@ public class Themoderator implements ModInitializer {
             Entity old = world.getEntity(currentMobId);
             if (old != null) old.discard();
             currentMobId = null;
+            world.setChunkForced(currentMobPosX, currentMobPosZ, false);
+            currentMobPosX = null;
+            currentMobPosZ = null;
         }
 
         // Mob-Typ
@@ -329,7 +317,8 @@ public class Themoderator implements ModInitializer {
         // CustomName
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
-
+        // Chunk loading
+        world.setChunkForced(currentMobPosX, currentMobPosZ, true);
         return true;
     }
 
@@ -339,6 +328,9 @@ public class Themoderator implements ModInitializer {
             Entity e = world.getEntity(currentMobId);
             if (e != null) e.discard();
             currentMobId = null;
+            world.setChunkForced(currentMobPosX, currentMobPosZ, false);
+            currentMobPosX = null;
+            currentMobPosZ = null;
             LOGGER.info("[themoderator] Avatar despawned.");
         } else {
             LOGGER.info("[themoderator] No Avatar to despawn.");
