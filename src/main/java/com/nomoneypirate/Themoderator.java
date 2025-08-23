@@ -4,11 +4,15 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
+import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
+import net.minecraft.entity.ai.goal.*;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -271,27 +275,47 @@ public class Themoderator implements ModInitializer {
         };
 
         if (entityType == null) return false;
-
         Entity entity = entityType.create(world, null);
         if (entity == null) return false;
 
-        //Invulnerable
+        //Spawn
+        world.spawnEntity(entity);
+        currentMobId = entity.getUuid();
+        //Set Invulnerable
         entity.setInvulnerable(true);
         //Set to ground
         entity.refreshPositionAndAngles(groundPos.getX(), groundPos.getY(), groundPos.getZ(), 0, 0);
-        world.spawnEntity(entity);
-        currentMobId = entity.getUuid();
+
+        //Clear goals
+        GoalSelector goals = ((MobEntityAccessor) entity).getGoalSelector();
+        goals.getGoals().clear();
 
         // NoAI
-        entity.getCommandSource(world).getServer().getCommandManager().executeWithPrefix(
-                entity.getCommandSource(world), "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
-        );
+        // entity.getCommandSource(world).getServer().getCommandManager().executeWithPrefix(
+        //         entity.getCommandSource(world), "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
+        // );
 
         // CustomName
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
 
         return true;
+    }
+
+    public static void makeMobFollowPlayer(ServerWorld world, UUID mobId, String playerName) {
+        Entity entity = world.getEntity(mobId);
+        PathAwareEntity pae = (PathAwareEntity) entity;
+        if (!(entity instanceof MobEntity mob)) return;
+
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        if (player == null) return;
+
+        // Access GoalSelector via Mixin
+        GoalSelector goalSelector = ((MobEntityAccessor) mob).getGoalSelector();
+        goalSelector.getGoals().clear(); // Optional: alte Ziele entfernen
+
+        // Follow-Goal
+        goalSelector.add(1, new FollowPlayerGoal(mob, player, 1.0));
     }
 
     public static boolean despawnModeratorAvatar(ServerWorld world) {
