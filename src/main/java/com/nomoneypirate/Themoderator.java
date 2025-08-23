@@ -116,17 +116,22 @@ public class Themoderator implements ModInitializer {
                 currentMobPosZ = 0;
 
                 if (!decision.value2().isEmpty()) {
-                    String[] parts = decision.value2().trim().split("\\s+"); // Trenne bei einem oder mehreren Leerzeichen
+                    String[] parts = decision.value2().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
                             currentMobPosX = Integer.parseInt(parts[0]);
                             currentMobPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            System.err.println("Ungültige Koordinaten: " + decision.value2());
-                            e.printStackTrace();
+                            feedback = "Incorrect usage: " + decision.value2();
+                            // Feedback
+                            LlmClient.sendFeedbackAsync(feedback)
+                                    .thenAccept(dec -> applyDecision(server, dec));
                         }
                     } else {
-                        System.err.println("Erwartet zwei Werte, aber gefunden: " + decision.value2());
+                        feedback = "Incorrect usage: " + decision.value2();
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
                     }
                 }
 
