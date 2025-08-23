@@ -76,7 +76,7 @@ public final class LlmClient {
             Files.createDirectories(logDir);
             Files.writeString(logFile, content + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
-            LOGGER.warn("[themoderator] Logfile save error!");
+            LOGGER.warn("Logfile save error!");
         }
     }
 
@@ -149,7 +149,7 @@ public final class LlmClient {
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON, fallback to IGNORE
             // and log it just in case we want to debug what the llm response was
-            LOGGER.info("[themoderator] {}",  "Unclear output from llm model.");
+            LOGGER.info("Unclear output from llm model.");
             return new ModerationDecision(ModerationDecision.Action.IGNORE, "Unclear output from llm model.","");
 
         }

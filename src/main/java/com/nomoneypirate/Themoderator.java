@@ -1,7 +1,5 @@
 package com.nomoneypirate;
 
-import com.mojang.brigadier.arguments.DoubleArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.mixin.MobEntityAccessor;
@@ -25,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
@@ -66,7 +63,7 @@ public class Themoderator implements ModInitializer {
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
                 // In case of errors: do not block anything, at most log
-                LOGGER.error("[themoderator] Welcoming failed: {}", ex.getMessage());
+                LOGGER.error("Welcoming failed: {}", ex.getMessage());
                 return null;
             });
         });
@@ -85,12 +82,12 @@ public class Themoderator implements ModInitializer {
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
                 // In case of errors: do not block anything, at most log
-                LOGGER.error("[themoderator] LLM error: {}", ex.getMessage());
+                LOGGER.error("LLM error: {}", ex.getMessage());
                 return null;
             });
         });
-        //System.out.println("[themoderator] Initialized.");
-        LOGGER.info("[themoderator] Initialized.");
+        //System.out.println("Initialized.");
+        LOGGER.info("Initialized.");
     }
 
     private void applyDecision(MinecraftServer server, ModerationDecision decision) {
@@ -178,7 +175,7 @@ public class Themoderator implements ModInitializer {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String info = "Player '" + decision.value() + "' not found.";
-                    LOGGER.info("[themoderator] {}", info);
+                    LOGGER.info(info);
                     LlmClient.sendFeedbackAsync(info)
                             .thenAccept(dec -> applyDecision(server, dec));
                     return;
@@ -205,7 +202,7 @@ public class Themoderator implements ModInitializer {
                                 + "\"";
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info("[themoderator] {}", feedback);
+                        LOGGER.info(feedback);
                     }
 
                     case KICK -> {
@@ -221,7 +218,7 @@ public class Themoderator implements ModInitializer {
                                 + "\"";
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info("[themoderator] {}", feedback);
+                        LOGGER.info(feedback);
                     }
 
                     case BAN -> {
@@ -248,7 +245,7 @@ public class Themoderator implements ModInitializer {
                             GameProfile profile = player.getGameProfile();
                             Date now = new Date();
                             String reason = decision.value2();
-                            String source = "[themoderator]";
+                            String source = "[The Moderator]";
                             Date expiry = null; // null = permanent
 
                             BannedPlayerEntry entry = new BannedPlayerEntry(
@@ -272,7 +269,7 @@ public class Themoderator implements ModInitializer {
                                 + "\"";
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info("[themoderator] {}", feedback);
+                        LOGGER.info(feedback);
                     }
                 }
             }
@@ -294,7 +291,7 @@ public class Themoderator implements ModInitializer {
                     !(entity instanceof PlayerEntity)) {
 
                 entity.discard(); // Remove Entity
-                LOGGER.info("[themoderator] Removed lingering entity: {}", entity.getType().toString());
+                LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
             }
         }
         // Remove old Avatar
@@ -348,7 +345,6 @@ public class Themoderator implements ModInitializer {
         return true;
     }
 
-
     public static boolean despawnModeratorAvatar(ServerWorld world) {
         boolean found = false;
 
@@ -360,7 +356,7 @@ public class Themoderator implements ModInitializer {
 
                 entity.discard(); // Remove Entity
                 found = true;
-                LOGGER.info("[themoderator] Removed lingering entity: {}", entity.getType().toString());
+                LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
             }
         }
 
@@ -372,10 +368,10 @@ public class Themoderator implements ModInitializer {
             world.setChunkForced(currentMobPosX, currentMobPosZ, false);
             currentMobPosX = null;
             currentMobPosZ = null;
-            LOGGER.info("[themoderator] Avatar despawned.");
+            LOGGER.info("Avatar despawned.");
             found = true;
         } else {
-            LOGGER.info("[themoderator] No Avatar to despawn.");
+            LOGGER.info("No Avatar to despawn.");
         }
 
         return found;
@@ -401,7 +397,6 @@ public class Themoderator implements ModInitializer {
         return "Entity not found.";
     }
 
-
     public static void makeMobFollowPlayer(ServerWorld world, UUID mobId, String playerName) {
         Entity entity = world.getEntity(mobId);
         if (!(entity instanceof MobEntity mob)) return;
@@ -417,7 +412,6 @@ public class Themoderator implements ModInitializer {
         goalSelector.add(1, new FollowPlayerGoal(mob, player, 1.0));
     }
 
-
     // Let's register a command to be able to reload configuration file at runtime
     // Note, we use permission level (2) to make sure only operators can use it
     private void registerCommands() {
@@ -428,108 +422,12 @@ public class Themoderator implements ModInitializer {
                         .requires(source -> source.hasPermissionLevel(2))
                         .executes(context -> {
                             ConfigLoader.load();
-                            context.getSource().sendFeedback(() -> Text.literal("[themoderator] Configuration File Reloaded."), false);
+                            context.getSource().sendFeedback(() -> Text.literal("Configuration File Reloaded."), false);
+                            LOGGER.info("Configuration File Reloaded.");
                             return 1;
                         })
                 )
-
-
         );
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-
-            // === Spawn Command ===
-            dispatcher.register(literal("spawnavatar")
-                            .then(argument("type", StringArgumentType.word())
-                                    .then(argument("x", DoubleArgumentType.doubleArg())
-                                            .then(argument("y", DoubleArgumentType.doubleArg())
-                                                    .then(argument("z", DoubleArgumentType.doubleArg())
-                                                            .executes(ctx -> {
-                                                                String type = StringArgumentType.getString(ctx, "type")
-                                                                        .toUpperCase(Locale.ROOT);
-                                                                double x = DoubleArgumentType.getDouble(ctx, "x");
-                                                                double z = DoubleArgumentType.getDouble(ctx, "z");
-
-                                                                ServerWorld world = ctx.getSource().getWorld();
-                                                                // Check for ground position
-                                                                BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos((int)x, 0, (int)z));
-
-                                                                // Remove old avatar
-                                                                if (currentMobId != null) {
-                                                                    Entity old = world.getEntity(currentMobId);
-                                                                    if (old != null) old.discard();
-                                                                    currentMobId = null;
-                                                                }
-
-                                                                // Mob-Type
-                                                                EntityType<?> entityType = switch (type) {
-                                                                    case "CHICKEN" -> EntityType.CHICKEN;
-                                                                    case "COW" -> EntityType.COW;
-                                                                    case "PIG" -> EntityType.PIG;
-                                                                    case "HORSE" -> EntityType.HORSE;
-                                                                    case "SHEEP" -> EntityType.SHEEP;
-                                                                    case "GOAT" -> EntityType.GOAT;
-                                                                    case "FROG" -> EntityType.FROG;
-                                                                    default -> null;
-                                                                };
-
-                                                                if (entityType == null) {
-                                                                    ctx.getSource().sendError(Text.literal("Invalid avatar-type: " + type));
-                                                                    return 0;
-                                                                }
-
-                                                                Entity entity = entityType.create(world, null);
-
-                                                                if (entity != null) {
-                                                                    entity.setInvulnerable(true);
-
-                                                                    world.spawnEntity(entity);
-                                                                    entity.refreshPositionAndAngles(groundPos.getX(), groundPos.getY(), groundPos.getZ(), 0, 0);
-                                                                    currentMobId = entity.getUuid();
-
-                                                                    ctx.getSource().getServer().getCommandManager().executeWithPrefix(
-                                                                            ctx.getSource(),
-                                                                            "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
-                                                                    );
-                                                                    ctx.getSource().getServer().getCommandManager().executeWithPrefix(
-                                                                            ctx.getSource(),
-                                                                            "data merge entity " + entity.getUuidAsString() + " {CustomName:'{\"text\":\"The Moderator\"}', CustomNameVisible:1b}"
-                                                                    );
-
-                                                                    ctx.getSource().sendFeedback(
-                                                                            () -> Text.literal("Avatar spawned as: "+ type +". At: X- " +groundPos.getX()+ " Y- " +groundPos.getY()+ " Z- " +groundPos.getZ()),
-                                                                            false
-                                                                    );
-                                                                } else {
-                                                                    ctx.getSource().sendError(Text.literal("Spawning was not possible."));
-                                                                }
-                                                                return 1;
-                                                            })
-                                                    )
-                                            )
-                                    )
-                            )
-            );
-
-            // === Despawn Command ===
-            dispatcher.register(
-                    literal("despawnavatar")
-                            .executes(ctx -> {
-                                ServerWorld world = ctx.getSource().getWorld();
-                                if (currentMobId != null) {
-                                    Entity e = world.getEntity(currentMobId);
-                                    if (e != null) e.discard();
-                                    currentMobId = null;
-                                    ctx.getSource().sendFeedback(() -> Text.literal("Avatar entfernt."), false);
-                                } else {
-                                    ctx.getSource().sendError(Text.literal("Kein Avatar vorhanden."));
-                                }
-                                return 1;
-                            })
-            );
-
-        });
-
     }
-
 }
