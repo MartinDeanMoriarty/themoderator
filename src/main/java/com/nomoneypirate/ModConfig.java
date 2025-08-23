@@ -6,6 +6,7 @@ public class ModConfig {
     // Server with a whitelist should use this!
     public Boolean useWhitelist = true;
     // Server without a whitelist should use this!
+    // But it is possible to use both.
     public Boolean useBanlist = false;
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
