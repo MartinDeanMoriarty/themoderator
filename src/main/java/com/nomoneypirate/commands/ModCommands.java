@@ -1,10 +1,10 @@
 package com.nomoneypirate.commands;
 
+import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.text.Text;
 import static net.minecraft.server.command.CommandManager.literal;
-import static com.nomoneypirate.Themoderator.LOGGER;
 
 public class ModCommands {
 

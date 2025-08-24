@@ -1,5 +1,6 @@
 package com.nomoneypirate.entity;
 
+import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -11,8 +12,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
-import static com.nomoneypirate.Themoderator.LOGGER;
-
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;

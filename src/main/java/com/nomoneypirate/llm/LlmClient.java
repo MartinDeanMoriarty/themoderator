@@ -1,6 +1,6 @@
 package com.nomoneypirate.llm;
 
-import com.google.gson.*;
+import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
 import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
-import static com.nomoneypirate.Themoderator.LOGGER;
+import com.google.gson.*;
 
 public final class LlmClient {
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
