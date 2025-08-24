@@ -82,8 +82,9 @@ public class Themoderator implements ModInitializer {
     }
 
     // Apply the decision and translate it into an action
-    private void applyDecision(MinecraftServer server, ModerationDecision decision) {
+    public void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
+
             case CHAT -> server.getPlayerManager().broadcast(
                     Text.literal("The Moderator: " + decision.value()),
                     false
@@ -94,7 +95,7 @@ public class Themoderator implements ModInitializer {
                 String list = players.stream()
                         .map(p -> p.getName().getString())
                         .collect(Collectors.joining(", "));
-                // Feedback ans LLM
+                // Feedback
                 String feedback = "Current players: " + list;
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
@@ -158,6 +159,13 @@ public class Themoderator implements ModInitializer {
                 if (Objects.equals(decision.value(), "ME")) {
                     feedback = MobActions.whereIs(server.getOverworld(), "", MobAvatar.currentMobId);
                 }
+                // Feedback
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case FEEDBACK -> {
+                String feedback = decision.value();
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));

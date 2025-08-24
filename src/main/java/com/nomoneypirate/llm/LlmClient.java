@@ -14,6 +14,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.google.gson.*;
 
 public final class LlmClient {
@@ -108,7 +111,8 @@ public final class LlmClient {
         String value = "";
         String value2 = "";
         try {
-            JsonObject o = JsonParser.parseString(responseText).getAsJsonObject();
+            // Pre parse -> See extractJson()
+            JsonObject o = JsonParser.parseString(extractJson(responseText)).getAsJsonObject();
             String actionStr = o.get("action").getAsString().toUpperCase();
 
             // Does value exist?
@@ -131,16 +135,26 @@ public final class LlmClient {
                 case "SPAWNAVATAR" -> ModerationDecision.Action.SPAWNAVATAR;
                 case "DESPAWNAVATAR" -> ModerationDecision.Action.DESPAWNAVATAR;
                 case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
+                case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
                 default -> ModerationDecision.Action.IGNORE;
             };
             return new ModerationDecision(action, value, value2);
         } catch (Exception e) {
-            // If the LLM does not strictly deliver JSON, fallback to IGNORE
-            // and log it just in case we want to debug what the llm response was
+            // If the LLM does not strictly deliver JSON
             LOGGER.info("Unclear output from llm model.");
-            return new ModerationDecision(ModerationDecision.Action.IGNORE, "Unclear output from llm model.","");
-
+            // Feedback
+            String feedback = "Something went wrong. Use JSON only!";
+            return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"");
         }
+    }
+    // Pre parse
+    private static String extractJson(String rawText) {
+        Pattern pattern = Pattern.compile("\\{.*?\\}", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(rawText);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return "{}";
     }
 
     private static void logToFile(String filename, String content) {
