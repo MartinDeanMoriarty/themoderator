@@ -1,4 +1,4 @@
-package com.nomoneypirate;
+package com.nomoneypirate.config;
 
 public class ModConfig {
     // Is llm allowed to use BAN?

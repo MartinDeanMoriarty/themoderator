@@ -1,7 +1,7 @@
 package com.nomoneypirate.llm;
 
 import com.google.gson.*;
-import com.nomoneypirate.ConfigLoader;
+import com.nomoneypirate.config.ConfigLoader;
 import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
 import java.net.http.*;

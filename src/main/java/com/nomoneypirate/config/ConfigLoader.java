@@ -1,4 +1,4 @@
-package com.nomoneypirate;
+package com.nomoneypirate.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

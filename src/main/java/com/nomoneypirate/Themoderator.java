@@ -1,38 +1,31 @@
 package com.nomoneypirate;
 
+import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
-import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import static net.minecraft.server.command.CommandManager.literal;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
-import javax.swing.*;
+import com.nomoneypirate.commands.ModCommands;
+import com.nomoneypirate.entity.ModAvatar;
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
-    private static UUID currentMobId = null;
-    private static Integer currentMobPosX = null;
-    private static Integer currentMobPosZ = null;
 
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
@@ -48,7 +41,7 @@ public class Themoderator implements ModInitializer {
         // Load configuration file
         ConfigLoader.load();
         // Register mod commands
-        registerCommands();
+        ModCommands.registerCommands();
 
         // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -90,6 +83,7 @@ public class Themoderator implements ModInitializer {
         LOGGER.info("Initialized.");
     }
 
+    // Apply the decision and translate it into an action
     private void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
             case CHAT -> server.getPlayerManager().broadcast(
@@ -110,15 +104,15 @@ public class Themoderator implements ModInitializer {
 
             case SPAWNAVATAR -> {
                 String feedback;
-                currentMobPosX = 0;
-                currentMobPosZ = 0;
+                ModAvatar.currentMobPosX = 0;
+                ModAvatar.currentMobPosZ = 0;
 
                 if (!decision.value2().isEmpty()) {
                     String[] parts = decision.value2().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
-                            currentMobPosX = Integer.parseInt(parts[0]);
-                            currentMobPosZ = Integer.parseInt(parts[1]);
+                            ModAvatar.currentMobPosX = Integer.parseInt(parts[0]);
+                            ModAvatar.currentMobPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
                             feedback = "Incorrect usage: " + decision.value2();
                             // Feedback
@@ -134,8 +128,8 @@ public class Themoderator implements ModInitializer {
                 }
 
                 //MinecraftServer server = world.getServer();
-                if (spawnModeratorAvatar(server.getOverworld(), decision.value(),currentMobPosX,currentMobPosZ)) {
-                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + currentMobPosX + "  " + currentMobPosZ;
+                if (ModAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(),ModAvatar.currentMobPosX,ModAvatar.currentMobPosZ)) {
+                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + ModAvatar.currentMobPosX + "  " + ModAvatar.currentMobPosZ;
                 } else {
                     feedback = "Spawning was not possible.";
                 }
@@ -147,7 +141,7 @@ public class Themoderator implements ModInitializer {
             case DESPAWNAVATAR -> {
                 String feedback;
 
-                if (despawnModeratorAvatar(server.getOverworld())) {
+                if (ModAvatar.despawnModeratorAvatar(server.getOverworld())) {
                     feedback = "Avatar despawned.";
                 } else {
                     feedback = "No Avatar to despawn.";
@@ -164,7 +158,7 @@ public class Themoderator implements ModInitializer {
                     feedback = whereIs(server.getOverworld(), decision.value(), null);
                 }
                 if (Objects.equals(decision.value(), "ME")) {
-                    feedback = whereIs(server.getOverworld(), "", currentMobId);
+                    feedback = whereIs(server.getOverworld(), "", ModAvatar.currentMobId);
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -280,103 +274,6 @@ public class Themoderator implements ModInitializer {
         }
     }
 
-    public static boolean spawnModeratorAvatar(ServerWorld world, String type, int x, int z) {
-        // Check for ground position
-        BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
-
-        // Remove every Mob named "The Moderator"
-        for (Entity entity : world.iterateEntities()) {
-            if (entity.hasCustomName() &&
-                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
-                    !(entity instanceof PlayerEntity)) {
-
-                entity.discard(); // Remove Entity
-                LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
-            }
-        }
-        // Remove old Avatar
-        if (currentMobId != null) {
-            Entity old = world.getEntity(currentMobId);
-            if (old != null) old.discard();
-            currentMobId = null;
-            world.setChunkForced(currentMobPosX, currentMobPosZ, false);
-            currentMobPosX = null;
-            currentMobPosZ = null;
-        }
-
-        // Mob-Typ
-        EntityType<?> entityType = switch (type.toUpperCase(Locale.ROOT)) {
-            case "CHICKEN" -> EntityType.CHICKEN;
-            case "COW" -> EntityType.COW;
-            case "PIG" -> EntityType.PIG;
-            case "HORSE" -> EntityType.HORSE;
-            case "SHEEP" -> EntityType.SHEEP;
-            case "GOAT" -> EntityType.GOAT;
-            case "FROG" -> EntityType.FROG;
-            default -> null;
-        };
-
-        if (entityType == null) return false;
-        Entity entity = entityType.create(world, null);
-        if (entity == null) return false;
-
-        //Spawn
-        world.spawnEntity(entity);
-        currentMobId = entity.getUuid();
-        //Set Invulnerable
-        entity.setInvulnerable(true);
-        //Set to ground
-        entity.refreshPositionAndAngles(groundPos.getX(), groundPos.getY(), groundPos.getZ(), 0, 0);
-
-        //Clear goals
-        GoalSelector goals = ((MobEntityAccessor) entity).getGoalSelector();
-        goals.getGoals().clear();
-
-        // NoAI
-        // entity.getCommandSource(world).getServer().getCommandManager().executeWithPrefix(
-        //         entity.getCommandSource(world), "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
-        // );
-
-        // CustomName
-        entity.setCustomName(Text.literal("The Moderator"));
-        entity.setCustomNameVisible(true);
-        // Chunk loading
-        world.setChunkForced(currentMobPosX, currentMobPosZ, true);
-        return true;
-    }
-
-    public static boolean despawnModeratorAvatar(ServerWorld world) {
-        boolean found = false;
-
-        // Remove every Mob named "The Moderator"
-        for (Entity entity : world.iterateEntities()) {
-            if (entity.hasCustomName() &&
-                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
-                    !(entity instanceof PlayerEntity)) {
-
-                entity.discard(); // Remove Entity
-                found = true;
-                LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
-            }
-        }
-
-        // Remove registered Mob
-        if (currentMobId != null) {
-            Entity e = world.getEntity(currentMobId);
-            if (e != null) e.discard();
-            currentMobId = null;
-            world.setChunkForced(currentMobPosX, currentMobPosZ, false);
-            currentMobPosX = null;
-            currentMobPosZ = null;
-            LOGGER.info("Avatar despawned.");
-            found = true;
-        } else {
-            LOGGER.info("No Avatar to despawn.");
-        }
-
-        return found;
-    }
-
     public static String whereIs(ServerWorld world, String name, UUID currentMobUuid) {
         // Player
         if (name.isEmpty() && currentMobUuid == null) {
@@ -397,37 +294,4 @@ public class Themoderator implements ModInitializer {
         return "Entity not found.";
     }
 
-    public static void makeMobFollowPlayer(ServerWorld world, UUID mobId, String playerName) {
-        Entity entity = world.getEntity(mobId);
-        if (!(entity instanceof MobEntity mob)) return;
-
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
-        if (player == null) return;
-
-        // Access GoalSelector via Mixin
-        GoalSelector goalSelector = ((MobEntityAccessor) mob).getGoalSelector();
-        goalSelector.getGoals().clear(); // Clear all goals
-
-        // Follow-Goal
-        goalSelector.add(1, new FollowPlayerGoal(mob, player, 1.0));
-    }
-
-    // Let's register a command to be able to reload configuration file at runtime
-    // Note, we use permission level (2) to make sure only operators can use it
-    private void registerCommands() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-
-                dispatcher.register(
-                literal("moderatorreload")
-                        .requires(source -> source.hasPermissionLevel(2))
-                        .executes(context -> {
-                            ConfigLoader.load();
-                            context.getSource().sendFeedback(() -> Text.literal("Configuration File Reloaded."), false);
-                            LOGGER.info("Configuration File Reloaded.");
-                            return 1;
-                        })
-                )
-        );
-
-    }
 }

@@ -1,4 +1,4 @@
-package com.nomoneypirate;
+package com.nomoneypirate.entity;
 
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
