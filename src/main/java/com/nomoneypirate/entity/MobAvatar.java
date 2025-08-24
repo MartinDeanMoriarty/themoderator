@@ -36,7 +36,7 @@ public class MobAvatar {
                 LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
             }
         }
-        // Remove old Avatar
+        // Remove old Avatar with uuid
         if (currentMobId != null) {
             Entity old = world.getEntity(currentMobId);
             if (old != null) old.discard();
