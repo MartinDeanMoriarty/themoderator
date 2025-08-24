@@ -30,7 +30,7 @@ public class ConfigLoader {
     }
 
     private static void save(Path path) throws IOException {
-        String json = new GsonBuilder().setPrettyPrinting().create().toJson(config);
+        String json = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(config);
         Files.writeString(path, json);
     }
 }
