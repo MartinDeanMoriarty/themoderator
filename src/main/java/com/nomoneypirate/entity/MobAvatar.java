@@ -17,7 +17,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
-public class ModAvatar {
+public class MobAvatar {
 
     public static UUID currentMobId = null;
     public static Integer currentMobPosX = null;

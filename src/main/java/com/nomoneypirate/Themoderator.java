@@ -3,17 +3,17 @@ package com.nomoneypirate;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
+import com.nomoneypirate.commands.ModCommands;
+import com.nomoneypirate.entity.MobAvatar;
+import com.nomoneypirate.actions.MobActions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.*;
-import net.minecraft.entity.ai.goal.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -21,8 +21,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
-import com.nomoneypirate.commands.ModCommands;
-import com.nomoneypirate.entity.ModAvatar;
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
@@ -104,15 +102,15 @@ public class Themoderator implements ModInitializer {
 
             case SPAWNAVATAR -> {
                 String feedback;
-                ModAvatar.currentMobPosX = 0;
-                ModAvatar.currentMobPosZ = 0;
+                MobAvatar.currentMobPosX = 0;
+                MobAvatar.currentMobPosZ = 0;
 
                 if (!decision.value2().isEmpty()) {
                     String[] parts = decision.value2().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
-                            ModAvatar.currentMobPosX = Integer.parseInt(parts[0]);
-                            ModAvatar.currentMobPosZ = Integer.parseInt(parts[1]);
+                            MobAvatar.currentMobPosX = Integer.parseInt(parts[0]);
+                            MobAvatar.currentMobPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
                             feedback = "Incorrect usage: " + decision.value2();
                             // Feedback
@@ -128,8 +126,8 @@ public class Themoderator implements ModInitializer {
                 }
 
                 //MinecraftServer server = world.getServer();
-                if (ModAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(),ModAvatar.currentMobPosX,ModAvatar.currentMobPosZ)) {
-                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + ModAvatar.currentMobPosX + "  " + ModAvatar.currentMobPosZ;
+                if (MobAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(), MobAvatar.currentMobPosX, MobAvatar.currentMobPosZ)) {
+                    feedback = "Avatar spawned as: "+ decision.value2() +". At:  " + MobAvatar.currentMobPosX + "  " + MobAvatar.currentMobPosZ;
                 } else {
                     feedback = "Spawning was not possible.";
                 }
@@ -141,7 +139,7 @@ public class Themoderator implements ModInitializer {
             case DESPAWNAVATAR -> {
                 String feedback;
 
-                if (ModAvatar.despawnModeratorAvatar(server.getOverworld())) {
+                if (MobAvatar.despawnModeratorAvatar(server.getOverworld())) {
                     feedback = "Avatar despawned.";
                 } else {
                     feedback = "No Avatar to despawn.";
@@ -155,10 +153,10 @@ public class Themoderator implements ModInitializer {
                 String feedback = "";
 
                 if (Objects.equals(decision.value(), "PLAYER")) {
-                    feedback = whereIs(server.getOverworld(), decision.value(), null);
+                    feedback = MobActions.whereIs(server.getOverworld(), decision.value(), null);
                 }
                 if (Objects.equals(decision.value(), "ME")) {
-                    feedback = whereIs(server.getOverworld(), "", ModAvatar.currentMobId);
+                    feedback = MobActions.whereIs(server.getOverworld(), "", MobAvatar.currentMobId);
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -272,26 +270,6 @@ public class Themoderator implements ModInitializer {
                 // Do nothing
             }
         }
-    }
-
-    public static String whereIs(ServerWorld world, String name, UUID currentMobUuid) {
-        // Player
-        if (name.isEmpty() && currentMobUuid == null) {
-            return "No entity specified.";
-        }
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(name);
-        if (player != null) {
-            BlockPos pos = player.getBlockPos();
-            return String.format("Player '%s' is at X: %d, Y: %d, Z: %d", name, pos.getX(), pos.getY(), pos.getZ());
-        }
-
-        // Moderator mob
-        Entity entity = Objects.requireNonNull(world.getServer().getWorld(world.getRegistryKey())).getEntity(currentMobUuid);
-        if (entity != null) {
-            BlockPos pos = entity.getBlockPos();
-            return String.format("Your '%s' is at X: %d, Y: %d, Z: %d", entity.getName().getString(), pos.getX(), pos.getY(), pos.getZ());
-        }
-        return "Entity not found.";
     }
 
 }
