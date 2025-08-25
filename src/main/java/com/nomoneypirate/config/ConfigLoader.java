@@ -19,7 +19,7 @@ public class ConfigLoader {
         try {
             if (!Files.exists(configPath)) {
                 config = new ModConfig(); // Defaults
-                save(configPath);
+                save(configPath, config);
             } else {
                 String json = Files.readString(configPath);
                 config = new Gson().fromJson(json, ModConfig.class);
@@ -36,7 +36,7 @@ public class ConfigLoader {
         try {
             if (!Files.exists(langPath)) {
                 lang = new LangConfig(); // Defaults
-                save(langPath);
+                save(langPath, lang);
             } else {
                 String json = Files.readString(langPath);
                 lang = new Gson().fromJson(json, LangConfig.class);
@@ -49,8 +49,8 @@ public class ConfigLoader {
         }
     }
 
-    private static void save(Path path) throws IOException {
-        String json = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(config);
+    private static void save(Path path, Object cl) throws IOException {
+        String json = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(cl);
         Files.writeString(path, json);
     }
 }
