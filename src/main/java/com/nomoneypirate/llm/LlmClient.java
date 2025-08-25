@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.gson.*;
+import net.minecraft.text.Text;
 
 public final class LlmClient {
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
@@ -27,9 +28,9 @@ public final class LlmClient {
     private static final Gson GSON = new GsonBuilder().create();
     // Set model name + prompts
     private static final String MODEL = ConfigLoader.config.model; // Ollama-Model
-    private static final String SYSTEM_RULES = ConfigLoader.config.systemRules;
-    private static final String SYSTEM_PROMPT = ConfigLoader.config.systemPrompt;
-    private static final String FEEDBACK_PROMPT = ConfigLoader.config.feedbackPROMPT;
+    private static final String SYSTEM_RULES = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.systemRules"));
+    private static final String SYSTEM_PROMPT = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.systemPrompt"));
+    private static final String FEEDBACK_PROMPT = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedbackPrompt"));
 
     // To LLM
     // Moderation
@@ -91,7 +92,7 @@ public final class LlmClient {
 
         // Input logging
         String jsonBody = GSON.toJson(body);
-        if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.logFilename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
+        if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.logFilename, "[" + timestamp + "] Feedback:\n" + jsonBody);
 
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
@@ -143,7 +144,7 @@ public final class LlmClient {
             // If the LLM does not strictly deliver JSON
             LOGGER.info("Unclear output from llm model.");
             // Feedback
-            String feedback = "Something went wrong. Use JSON only!";
+            String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_12"));
             return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"");
         }
     }

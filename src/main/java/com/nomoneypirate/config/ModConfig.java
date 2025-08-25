@@ -18,8 +18,7 @@ public class ModConfig {
     // LLM Logging
     public Boolean llmLogging = true;
     public String logFilename = "themoderator_llm.log";
-    // This is sent to the llm when a player connects to the server
-    public String welcomeText = "Begrüße den Spieler.";
+
     // The following prompts are important to llm communication
     // Usually no change needed, but you may want to translate to different language
     public String systemPrompt = """

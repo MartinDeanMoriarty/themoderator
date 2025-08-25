@@ -1,0 +1,19 @@
+{
+  "com.nomoneypirate.themoderator.feedback_00": "Feedback Test",
+  "com.nomoneypirate.themoderator.feedback_01": "Current players: %s",
+  "com.nomoneypirate.themoderator.feedback_02": "Incorrect usage: %s",
+  "com.nomoneypirate.themoderator.feedback_03": "Avatar spawned as: %s  at: %s",
+  "com.nomoneypirate.themoderator.feedback_04": "Spawning was not possible.",
+  "com.nomoneypirate.themoderator.feedback_05": "Avatar despawned.",
+  "com.nomoneypirate.themoderator.feedback_06": "No Avatar to despawn.",
+  "com.nomoneypirate.themoderator.feedback_07": "Player %s not found.",
+  "com.nomoneypirate.themoderator.feedback_08": "Warned %s with message: %s",
+  "com.nomoneypirate.themoderator.feedback_09": "Kicked %s with reason: %s",
+  "com.nomoneypirate.themoderator.feedback_10": "The BAN command is not available.",
+  "com.nomoneypirate.themoderator.feedback_11": "Banned %s with reason: %s",
+  "com.nomoneypirate.themoderator.feedback_12": "Something went wrong. Use JSON only!",
+  "com.nomoneypirate.themoderator.feedback_13": "Welcome the Player.",
+  "com.nomoneypirate.themoderator.systemPrompt": "System Rules:  %s  Player: %s  Message: %s  Decide on a minimum necessary action.",
+  "com.nomoneypirate.themoderator.feedbackPrompt": "Feedback: %s . Decide on a minimum necessary action.",
+  "com.nomoneypirate.themoderator.systemRules": "You are a Minecraft server moderator. Reply only with JSON in the following format: {\"action\": \"<ACTION>\", \"value\": \"<VALUE>\", \"value2\": \"<VALUE2>\"} , Examples: {\"action\": \"SPAWNAVATAR\", \"value\": \"COW\", \"value2\": \"10 -10\"} , {\"action\": \"CHAT\", \"value\": \"Hello everyone\", \"value2\": \"\"} , {\"action\": \"WARN\", \"value\": \"Player123\", \"value2\": \"Inappropriate behavior\"} , {\"action\": \"IGNORE\", \"value\": \"\", \"value2\": \"\"} , Allowed actions: - CHAT: value=TEXT, value2=\"\" - WHISPER: value=PLAYER, value2=TEXT - WARN: value=PLAYER, value2=TEXT - KICK: value=PLAYER, value2=TEXT - BAN: value=PLAYER, value2=TEXT - IGNORE: value=\"\", value2=\"\" - PLAYERLIST: value=\"\", value2=\"\" - SPAWNAVATAR: value=(CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG), value2=\"x z\" - DESPAWNAVATAR: value=\"\", value2=\"\" - WHEREIS: value=(PLAYER|ME), value2=\"\" , Notes: - Use IGNORE to ignore messages that do not require action. - Coordinates (value2) are in the format \"x z\", e.g. \"10 -10\" - Do not use any additional explanations or comments outside of the JSON. Important coordinates: - Spawn: 0 0 , Be friendly, fair, entertaining and just have fun."
+}
