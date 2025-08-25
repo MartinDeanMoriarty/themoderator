@@ -10,9 +10,11 @@ import java.nio.file.Path;
 
 public class ConfigLoader {
     public static ModConfig config;
+    public static LangConfig lang;
 
-    public static void load() {
+    public static void loadConfig() {
         // Using default fabric config directory
+        // Load config file
         Path configPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator.json");
         try {
             if (!Files.exists(configPath)) {
@@ -23,9 +25,27 @@ public class ConfigLoader {
                 config = new Gson().fromJson(json, ModConfig.class);
             }
         } catch (IOException e) {
-            //System.err.println("[themoderator] Error loading config: " + e.getMessage());
-            LOGGER.error("[themoderator] Error loading config: {}", e.getMessage());
+            LOGGER.error("[themoderator] Error loading config file: {}", e.getMessage());
             config = new ModConfig(); // Fallback
+        }
+    }
+    public static void loadLang() {
+        // Using default fabric config directory
+        // Load lang file
+        Path langPath = FabricLoader.getInstance().getConfigDir().resolve(ConfigLoader.config.languageFileName);
+        try {
+            if (!Files.exists(langPath)) {
+                lang = new LangConfig(); // Defaults
+                save(langPath);
+            } else {
+                String json = Files.readString(langPath);
+                lang = new Gson().fromJson(json, LangConfig.class);
+
+            }
+        } catch (IOException e) {
+            //System.err.println("[themoderator] Error loading config: " + e.getMessage());
+            LOGGER.error("[themoderator] Error loading language file: {}", e.getMessage());
+            lang = new LangConfig(); // Fallback
         }
     }
 

@@ -37,7 +37,9 @@ public class Themoderator implements ModInitializer {
 		// Proceed with mild caution.
 
         // Load configuration file
-        ConfigLoader.load();
+        ConfigLoader.loadConfig();
+        // Load language file
+        ConfigLoader.loadLang();
         // Register mod commands
         ModCommands.registerCommands();
 
@@ -47,7 +49,7 @@ public class Themoderator implements ModInitializer {
             ServerPlayerEntity player = handler.getPlayer();
             String playerName = player.getName().getString();
 
-            String welcomeText = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_13"));
+            String welcomeText = ConfigLoader.lang.welcomeText;
             // Asynchronous to the LLM
             LlmClient.moderateAsync(playerName, welcomeText).thenAccept(decision -> {
                 // Back to the server thread
@@ -79,7 +81,7 @@ public class Themoderator implements ModInitializer {
         });
         System.out.println("Initialized.");
         LOGGER.info("Initialized.");
-        System.out.println(Text.translatable("com.nomoneypirate.themoderator.feedback_00"));
+        //System.out.println(Text.translatable("com.nomoneypirate.themoderator.feedback_00"));
     }
 
     // Apply the decision and translate it into an action
@@ -87,8 +89,7 @@ public class Themoderator implements ModInitializer {
         switch (decision.action()) {
 
             case CHAT -> server.getPlayerManager().broadcast(
-                    Text.literal("The Moderator: " + decision.value()),
-                    false
+                    Text.literal("The Moderator: " + decision.value()),false
             );
 
             case PLAYERLIST -> {
@@ -97,7 +98,7 @@ public class Themoderator implements ModInitializer {
                         .map(p -> p.getName().getString())
                         .collect(Collectors.joining(", "));
                 // Feedback
-                String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_01", list));
+                String feedback = ConfigLoader.lang.feedback_01;
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
@@ -114,13 +115,13 @@ public class Themoderator implements ModInitializer {
                             MobAvatar.currentMobPosX = Integer.parseInt(parts[0]);
                             MobAvatar.currentMobPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_02", decision.value2()));
+                            feedback = ConfigLoader.lang.feedback_02;
                             // Feedback
                             LlmClient.sendFeedbackAsync(feedback)
                                     .thenAccept(dec -> applyDecision(server, dec));
                         }
                     } else {
-                        feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_02", decision.value2()));
+                        feedback = ConfigLoader.lang.feedback_02;
                         // Feedback
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
@@ -129,9 +130,9 @@ public class Themoderator implements ModInitializer {
 
                 //MinecraftServer server = world.getServer();
                 if (MobAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(), MobAvatar.currentMobPosX, MobAvatar.currentMobPosZ)) {
-                    feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_03", decision.value2(), MobAvatar.currentMobPosZ));
+                    feedback = String.valueOf(Text.translatable(ConfigLoader.lang.feedback_03, decision.value2(), MobAvatar.currentMobPosZ));
                 } else {
-                    feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_04"));
+                    feedback = ConfigLoader.lang.feedback_04;
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -142,9 +143,9 @@ public class Themoderator implements ModInitializer {
                 String feedback;
 
                 if (MobAvatar.despawnModeratorAvatar(server.getOverworld())) {
-                    feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_05"));
+                    feedback = ConfigLoader.lang.feedback_05;
                 } else {
-                    feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_06"));
+                    feedback = ConfigLoader.lang.feedback_06;
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -153,7 +154,6 @@ public class Themoderator implements ModInitializer {
 
             case WHEREIS -> {
                 String feedback = "";
-
                 if (Objects.equals(decision.value(), "PLAYER")) {
                     feedback = MobActions.whereIs(server.getOverworld(), decision.value(), null);
                 }
@@ -175,7 +175,7 @@ public class Themoderator implements ModInitializer {
             case WHISPER, WARN, KICK, BAN -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
-                    String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_07", decision.value()));
+                    String feedback = ConfigLoader.lang.feedback_07;
                     LlmClient.sendFeedbackAsync(feedback)
                             .thenAccept(dec -> applyDecision(server, dec));
                     return;
@@ -183,20 +183,15 @@ public class Themoderator implements ModInitializer {
 
                 switch (decision.action()) {
                     case WHISPER -> player.sendMessage(
-                            Text.literal("The Moderator: " + decision.value2()),
-                            false
+                            Text.literal("The Moderator: " + decision.value2()),false
                     );
 
                     case WARN -> {
                         player.sendMessage(
-                                Text.literal(
-                                        "The Moderator: "
-                                                + decision.value2()
-                                ),
-                                false
+                                Text.literal("The Moderator: " + decision.value2()),false
                         );
 
-                        String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_08", decision.value(), decision.value2()));
+                        String feedback = ConfigLoader.lang.feedback_08;
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);
@@ -204,11 +199,9 @@ public class Themoderator implements ModInitializer {
 
                     case KICK -> {
                         player.networkHandler.disconnect(
-                                Text.literal("The Moderator: "
-                                                + decision.value2()
-                                )
+                                Text.literal("The Moderator: " + decision.value2())
                         );
-                        String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_09", decision.value(), decision.value2()));
+                        String feedback = ConfigLoader.lang.feedback_09;
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);
@@ -216,15 +209,13 @@ public class Themoderator implements ModInitializer {
 
                     case BAN -> {
                         if (!ConfigLoader.config.allowBanCommand) {
-                            String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_10"));
+                            String feedback = ConfigLoader.lang.feedback_10;
                             LlmClient.sendFeedbackAsync(feedback)
                                     .thenAccept(dec -> applyDecision(server, dec));
                             return;
                         }
                         player.networkHandler.disconnect(
-                                Text.literal("The Moderator: "
-                                                + decision.value2()
-                                )
+                                Text.literal("The Moderator: " + decision.value2())
                         );
                         if (ConfigLoader.config.useWhitelist) {
                             // Remove Player of the whitelist
@@ -255,7 +246,7 @@ public class Themoderator implements ModInitializer {
                                 throw new RuntimeException(e);
                             }
                         }
-                        String feedback = String.valueOf(Text.translatable("com.nomoneypirate.themoderator.feedback_11", decision.value(), decision.value2()));
+                        String feedback = ConfigLoader.lang.feedback_11;
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);

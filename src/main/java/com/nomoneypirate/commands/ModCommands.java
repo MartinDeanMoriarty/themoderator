@@ -17,7 +17,10 @@ public class ModCommands {
                         literal("moderatorreload")
                                 .requires(source -> source.hasPermissionLevel(2))
                                 .executes(context -> {
-                                    ConfigLoader.load();
+                                    // Load configuration file
+                                    ConfigLoader.loadConfig();
+                                    // Load language file
+                                    ConfigLoader.loadLang();
                                     context.getSource().sendFeedback(() -> Text.literal("Configuration File Reloaded."), false);
                                     LOGGER.info("Configuration File Reloaded.");
                                     return 1;
