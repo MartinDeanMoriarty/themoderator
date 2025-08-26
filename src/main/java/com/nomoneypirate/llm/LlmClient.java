@@ -71,7 +71,7 @@ public final class LlmClient {
                 });
     }
 
-    // Feedback
+    // Feedback to LLM
     public static CompletableFuture<ModerationDecision> sendFeedbackAsync(String feedback) {
         String prompt = FEEDBACK_PROMPT.formatted(SYSTEM_RULES, feedback);
 
@@ -149,7 +149,7 @@ public final class LlmClient {
     }
     // Pre parse
     private static String extractJson(String rawText) {
-        Pattern pattern = Pattern.compile("\\{.*?\\}", Pattern.DOTALL);
+        Pattern pattern = Pattern.compile("\\{.*?}", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(rawText);
         if (matcher.find()) {
             return matcher.group();

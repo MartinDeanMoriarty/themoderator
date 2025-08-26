@@ -16,11 +16,38 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
-public class MobAvatar {
+public class ModAvatar {
 
-    public static UUID currentMobId = null;
-    public static Integer currentMobPosX = null;
-    public static Integer currentMobPosZ = null;
+    public static String currentAvatarType = null;
+    public static UUID currentAvatarId = null;
+    public static Integer currentAvatarPosX = null;
+    public static Integer currentAvatarPosZ = null;
+
+    public static boolean searchModeratorAvatar(ServerWorld world) {
+        boolean found = false;
+
+        // Search Mob named "The Moderator"
+        for (Entity entity : world.iterateEntities()) {
+            if (entity.hasCustomName() &&
+                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
+                    !(entity instanceof PlayerEntity)) {
+
+                currentAvatarId = entity.getUuid();
+                currentAvatarType = entity.getType().toString();
+                currentAvatarPosX = entity.getBlockX();
+                currentAvatarPosZ = entity.getBlockZ();
+                //Set Invulnerable
+                entity.setInvulnerable(true);
+                //Clear goals
+                GoalSelector goals = ((MobEntityAccessor) entity).getGoalSelector();
+                goals.getGoals().clear();
+                found = true;
+                LOGGER.info("Found lingering entity: {}", entity.getType().toString());
+            }
+        }
+
+        return found;
+    }
 
     public static boolean spawnModeratorAvatar(ServerWorld world, String type, int x, int z) {
         // Check for ground position
@@ -36,14 +63,16 @@ public class MobAvatar {
                 LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
             }
         }
+
         // Remove old Avatar with uuid
-        if (currentMobId != null) {
-            Entity old = world.getEntity(currentMobId);
+        if (currentAvatarId != null) {
+            Entity old = world.getEntity(currentAvatarId);
             if (old != null) old.discard();
-            currentMobId = null;
-            world.setChunkForced(currentMobPosX, currentMobPosZ, false);
-            currentMobPosX = null;
-            currentMobPosZ = null;
+            currentAvatarId = null;
+            currentAvatarType = null;
+            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
+            currentAvatarPosX = null;
+            currentAvatarPosZ = null;
         }
 
         // Mob-Typ
@@ -62,9 +91,13 @@ public class MobAvatar {
         Entity entity = entityType.create(world, null);
         if (entity == null) return false;
 
+        // Chunk loading
+        world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, true);
+
         //Spawn
         world.spawnEntity(entity);
-        currentMobId = entity.getUuid();
+        currentAvatarId = entity.getUuid();
+        currentAvatarType = entity.getType().toString();
         //Set Invulnerable
         entity.setInvulnerable(true);
         //Set to ground
@@ -82,8 +115,7 @@ public class MobAvatar {
         // CustomName
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
-        // Chunk loading
-        world.setChunkForced(currentMobPosX, currentMobPosZ, true);
+
         return true;
     }
 
@@ -103,13 +135,14 @@ public class MobAvatar {
         }
 
         // Remove registered Mob
-        if (currentMobId != null) {
-            Entity e = world.getEntity(currentMobId);
+        if (currentAvatarId != null) {
+            Entity e = world.getEntity(currentAvatarId);
             if (e != null) e.discard();
-            currentMobId = null;
-            world.setChunkForced(currentMobPosX, currentMobPosZ, false);
-            currentMobPosX = null;
-            currentMobPosZ = null;
+            currentAvatarId = null;
+            currentAvatarType = null;
+            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
+            currentAvatarPosX = null;
+            currentAvatarPosZ = null;
             LOGGER.info("Avatar despawned.");
             found = true;
         } else {

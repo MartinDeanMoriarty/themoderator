@@ -9,11 +9,13 @@ public class LangConfig {
     public String feedback_05 = "Avatar despawned.";
     public String feedback_06 = "Kein Avatar zum despawnen vorhanden.";
     public String feedback_07 = "Spieler %s nicht gefunden.";
-    public String feedback_08 = "Warnung an %s mit Nachricht: %s erfolgt.";
+    public String feedback_08 = "Spieler %s erfolgreich gewarnt mit Grund: %s";
     public String feedback_09 = "Spieler %s erfolgreich gekickt mit Grund: %s";
     public String feedback_10 = "Der BAN Befehl ist nicht verfügbar.";
-    public String feedback_11 = "Spieler %s erfolgreich gebannt mir Grund: %s";
+    public String feedback_11 = "Spieler %s erfolgreich gebannt mit Grund: %s";
     public String feedback_12 = "Etwas ging schief. Verwende nur JSON!";
+    public String feedback_13 = "Spieler '%s' ist bei X: %d, Y: %d, Z: %d";
+    public String feedback_14 = "Dein Avatar ist bei X: %d, Y: %d, Z: %d";
     // The following prompts are important to llm communication
     // Usually no change needed, but you may want to translate to different language
     public String systemPrompt = """

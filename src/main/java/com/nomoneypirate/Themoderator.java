@@ -4,12 +4,11 @@ import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.commands.ModCommands;
-import com.nomoneypirate.entity.MobAvatar;
-import com.nomoneypirate.actions.MobActions;
+import com.nomoneypirate.entity.ModAvatar;
+import com.nomoneypirate.actions.ModActions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -43,7 +42,7 @@ public class Themoderator implements ModInitializer {
         // Register mod commands
         ModCommands.registerCommands();
 
-        // Intercept player join messages (server-side)
+        // Register an event to intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             // Get player name
             ServerPlayerEntity player = handler.getPlayer();
@@ -61,7 +60,7 @@ public class Themoderator implements ModInitializer {
             });
         });
 
-        // Intercept chat messages (server-side)
+        // Register an event to Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             MinecraftServer server = sender.getServer();
             if (server == null) return;
@@ -79,9 +78,9 @@ public class Themoderator implements ModInitializer {
                 return null;
             });
         });
-        System.out.println("Initialized.");
+
+        //System.out.println("Initialized.");
         LOGGER.info("Initialized.");
-        //System.out.println(Text.translatable("com.nomoneypirate.themoderator.feedback_00"));
     }
 
     // Apply the decision and translate it into an action
@@ -98,22 +97,22 @@ public class Themoderator implements ModInitializer {
                         .map(p -> p.getName().getString())
                         .collect(Collectors.joining(", "));
                 // Feedback
-                String feedback = ConfigLoader.lang.feedback_01;
+                String feedback = ConfigLoader.lang.feedback_01.formatted(list);
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
 
             case SPAWNAVATAR -> {
                 String feedback;
-                MobAvatar.currentMobPosX = 0;
-                MobAvatar.currentMobPosZ = 0;
+                ModAvatar.currentAvatarPosX = 0;
+                ModAvatar.currentAvatarPosZ = 0;
 
                 if (!decision.value2().isEmpty()) {
                     String[] parts = decision.value2().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
-                            MobAvatar.currentMobPosX = Integer.parseInt(parts[0]);
-                            MobAvatar.currentMobPosZ = Integer.parseInt(parts[1]);
+                            ModAvatar.currentAvatarPosX = Integer.parseInt(parts[0]);
+                            ModAvatar.currentAvatarPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
                             feedback = ConfigLoader.lang.feedback_02;
                             // Feedback
@@ -127,10 +126,9 @@ public class Themoderator implements ModInitializer {
                                 .thenAccept(dec -> applyDecision(server, dec));
                     }
                 }
-
                 //MinecraftServer server = world.getServer();
-                if (MobAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(), MobAvatar.currentMobPosX, MobAvatar.currentMobPosZ)) {
-                    feedback = String.valueOf(Text.translatable(ConfigLoader.lang.feedback_03, decision.value2(), MobAvatar.currentMobPosZ));
+                if (ModAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ)) {
+                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value2(), ModAvatar.currentAvatarPosZ);
                 } else {
                     feedback = ConfigLoader.lang.feedback_04;
                 }
@@ -142,7 +140,7 @@ public class Themoderator implements ModInitializer {
             case DESPAWNAVATAR -> {
                 String feedback;
 
-                if (MobAvatar.despawnModeratorAvatar(server.getOverworld())) {
+                if (ModAvatar.despawnModeratorAvatar(server.getOverworld())) {
                     feedback = ConfigLoader.lang.feedback_05;
                 } else {
                     feedback = ConfigLoader.lang.feedback_06;
@@ -153,12 +151,12 @@ public class Themoderator implements ModInitializer {
             }
 
             case WHEREIS -> {
-                String feedback = "";
-                if (Objects.equals(decision.value(), "PLAYER")) {
-                    feedback = MobActions.whereIs(server.getOverworld(), decision.value(), null);
-                }
+                String feedback;
                 if (Objects.equals(decision.value(), "ME")) {
-                    feedback = MobActions.whereIs(server.getOverworld(), "", MobAvatar.currentMobId);
+                    feedback = ModActions.whereIs(server.getOverworld(), "", ModAvatar.currentAvatarId);
+                }
+                else {
+                    feedback = ModActions.whereIs(server.getOverworld(), decision.value(), null);
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -175,7 +173,7 @@ public class Themoderator implements ModInitializer {
             case WHISPER, WARN, KICK, BAN -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
-                    String feedback = ConfigLoader.lang.feedback_07;
+                    String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
                     LlmClient.sendFeedbackAsync(feedback)
                             .thenAccept(dec -> applyDecision(server, dec));
                     return;
@@ -190,8 +188,7 @@ public class Themoderator implements ModInitializer {
                         player.sendMessage(
                                 Text.literal("The Moderator: " + decision.value2()),false
                         );
-
-                        String feedback = ConfigLoader.lang.feedback_08;
+                        String feedback = ConfigLoader.lang.feedback_08.formatted(decision.value(), decision.value2());
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);
@@ -201,7 +198,7 @@ public class Themoderator implements ModInitializer {
                         player.networkHandler.disconnect(
                                 Text.literal("The Moderator: " + decision.value2())
                         );
-                        String feedback = ConfigLoader.lang.feedback_09;
+                        String feedback = ConfigLoader.lang.feedback_09.formatted(decision.value(), decision.value2());
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);
@@ -246,7 +243,7 @@ public class Themoderator implements ModInitializer {
                                 throw new RuntimeException(e);
                             }
                         }
-                        String feedback = ConfigLoader.lang.feedback_11;
+                        String feedback = ConfigLoader.lang.feedback_11.formatted(decision.value(), decision.value2());
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);

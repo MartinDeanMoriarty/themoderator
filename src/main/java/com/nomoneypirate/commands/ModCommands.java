@@ -21,8 +21,8 @@ public class ModCommands {
                                     ConfigLoader.loadConfig();
                                     // Load language file
                                     ConfigLoader.loadLang();
-                                    context.getSource().sendFeedback(() -> Text.literal("Configuration File Reloaded."), false);
-                                    LOGGER.info("Configuration File Reloaded.");
+                                    context.getSource().sendFeedback(() -> Text.literal("Configuration Files Reloaded."), false);
+                                    LOGGER.info("Configuration Files Reloaded.");
                                     return 1;
                                 })
                 )
