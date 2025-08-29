@@ -86,35 +86,35 @@ public class Themoderator implements ModInitializer {
             });
         });
 
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            // Check for a lingering Mob, which may be still there after a server restart
-            // Search all dimensions
-            for (ServerWorld world : server.getWorlds()) {
-                if (searchModeratorAvatar(world)) {
-                    // An old Mob was found, lets reuse it and send a feedback to the llm
-                    String feedback = currentModeratorAvatar();
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
-                    break; // Just stop search when found one
-                }
-            }
-        });
+//        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+//            // Check for a lingering Mob, which may be still there after a server restart
+//            // Search all dimensions
+//            for (ServerWorld world : server.getWorlds()) {
+//                if (searchModeratorAvatar(world)) {
+//                    // An old Mob was found, lets reuse it and send a feedback to the llm
+//                    String feedback = currentModeratorAvatar();
+//                    LlmClient.sendFeedbackAsync(feedback)
+//                            .thenAccept(dec -> applyDecision(server, dec));
+//                    break; // Just stop search when found one
+//                }
+//            }
+//        });
 
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            // Server and worlds are ready, so send a feedback to the llm
-            String feedback = ConfigLoader.lang.feedback_17;
-            LlmClient.sendFeedbackAsync(feedback)
-                    .thenAccept(dec -> applyDecision(server, dec));
-
-            // Pull a chunk loader along with the Avatar if there is an Avatar
-            ServerWorld world = ModAvatar.findModeratorWorld(server);
-            if (world != null) {
-                Entity moderator = ModAvatar.findModeratorEntity(world);
-                if (moderator != null) {
-                    ModAvatar.updateChunkAnchor(world, moderator);
-                }
-            }
-        });
+//        ServerTickEvents.END_SERVER_TICK.register(server -> {
+//            // Server and worlds are ready, so send a feedback to the llm
+//            String feedback = ConfigLoader.lang.feedback_17;
+//            LlmClient.sendFeedbackAsync(feedback)
+//                    .thenAccept(dec -> applyDecision(server, dec));
+//
+//            // Pull a chunk loader along with the Avatar if there is an Avatar
+//            ServerWorld world = ModAvatar.findModeratorWorld(server);
+//            if (world != null) {
+//                Entity moderator = ModAvatar.findModeratorEntity(world);
+//                if (moderator != null) {
+//                    ModAvatar.updateChunkAnchor(world, moderator);
+//                }
+//            }
+//        });
 
         System.out.println(MOD_ID + "Initialized.");
         LOGGER.info("Initialized.");
@@ -150,6 +150,7 @@ public class Themoderator implements ModInitializer {
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
+
             case STOP -> {
                 String feedback;
                 if (ModActions.stopAllGoals((ServerWorld) ModAvatar.currentAvatarWorld, ModAvatar.currentAvatarId)) {

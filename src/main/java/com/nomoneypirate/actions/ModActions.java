@@ -48,6 +48,7 @@ public class ModActions {
         goalSelector.add(1, new FollowPlayerGoal(mob, player, 1.0));
         return  true;
     }
+
     // Stop All Goals
     public static boolean stopAllGoals(ServerWorld world, UUID mobId) {
         Entity entity = world.getEntity(mobId);
