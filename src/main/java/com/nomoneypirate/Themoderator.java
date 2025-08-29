@@ -1,7 +1,6 @@
 package com.nomoneypirate;
 
 import com.nomoneypirate.config.ConfigLoader;
-import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.commands.ModCommands;
@@ -49,8 +48,6 @@ public class Themoderator implements ModInitializer {
         ConfigLoader.loadLang();
         // Register mod commands
         ModCommands.registerCommands();
-        // Register mod events
-        ModEvents.registerEvents();
 
         // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
