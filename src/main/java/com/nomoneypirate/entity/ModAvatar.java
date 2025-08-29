@@ -1,16 +1,13 @@
 package com.nomoneypirate.entity;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
-
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.GoalSelector;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
@@ -65,7 +62,7 @@ public class ModAvatar {
     }
 
     // Get the current Avatar and return type and coordinates
-    public static String currentModeratorAvatar(ServerWorld world) {
+    public static String currentModeratorAvatar() {
         String feedback;
         if (currentAvatarId != null) {
             feedback = ConfigLoader.lang.feedback_16.formatted(currentAvatarType, currentAvatarWorld, currentAvatarPosX, currentAvatarPosZ);

@@ -92,7 +92,7 @@ public class Themoderator implements ModInitializer {
             for (ServerWorld world : server.getWorlds()) {
                 if (searchModeratorAvatar(world)) {
                     // An old Mob was found, lets reuse it and send a feedback to the llm
-                    String feedback = currentModeratorAvatar(world);
+                    String feedback = currentModeratorAvatar();
                     LlmClient.sendFeedbackAsync(feedback)
                             .thenAccept(dec -> applyDecision(server, dec));
                     break; // Just stop search when found one
