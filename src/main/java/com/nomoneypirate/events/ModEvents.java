@@ -82,11 +82,6 @@ public class ModEvents {
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            // Server and worlds are ready, so send a feedback to the llm
-            String feedback = ConfigLoader.lang.feedback_17;
-            LlmClient.sendFeedbackAsync(feedback)
-                    .thenAccept(dec -> applyDecision(server, dec));
-
             // Pull a chunk loader along with the Avatar if there is an Avatar
             ServerWorld world = ModAvatar.findModeratorWorld(server);
             if (world != null) {
