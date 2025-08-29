@@ -136,6 +136,8 @@ public final class LlmClient {
                 case "DESPAWNAVATAR" -> ModerationDecision.Action.DESPAWNAVATAR;
                 case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
                 case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
+                case "FOLLOW" -> ModerationDecision.Action.FOLLOW;
+                case "STOP" -> ModerationDecision.Action.STOP;
                 default -> ModerationDecision.Action.IGNORE;
             };
             return new ModerationDecision(action, value, value2);

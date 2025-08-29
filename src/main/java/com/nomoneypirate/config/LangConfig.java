@@ -4,7 +4,7 @@ public class LangConfig {
     public String welcomeText = "Begrüße den Spieler.";
     public String feedback_01 = "Aktive Spieler: %s";
     public String feedback_02 = "Falsche verwendung: %s";
-    public String feedback_03 = "Avatar gespawned als: %s  bei: %s";
+    public String feedback_03 = "Avatar gespawned als: %s  bei X: %d, Z: %d";
     public String feedback_04 = "Spawning war nicht möglich.";
     public String feedback_05 = "Avatar despawned.";
     public String feedback_06 = "Kein Avatar zum despawnen vorhanden.";
@@ -16,6 +16,12 @@ public class LangConfig {
     public String feedback_12 = "Etwas ging schief. Verwende nur JSON!";
     public String feedback_13 = "Spieler '%s' ist bei X: %d, Y: %d, Z: %d";
     public String feedback_14 = "Dein Avatar ist bei X: %d, Y: %d, Z: %d";
+    public String feedback_15 = "Kein Avatar vorhanden";
+    public String feedback_16 = "Avatar ist ein %s in Dimension %s bei X: %d, Z: %d";
+    public String feedback_17 = "Der Server wurde (neu)gestartet und ist bereit für Spieler.";
+    public String feedback_18 = "Aktion war niocht möglich.";
+    public String feedback_19 = "Alles gestoppt.";
+    public String feedback_20 = "Folge Spieler %s.";
     // The following prompts are important to llm communication
     // Usually no change needed, but you may want to translate to different language
     public String systemPrompt = """
@@ -54,9 +60,11 @@ public class LangConfig {
             - SPAWNAVATAR: value=(CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG), value2="x z"
             - DESPAWNAVATAR: value="", value2=""
             - WHEREIS: value=(PLAYER|ME), value2=""
+            - FOLLOW: value=PLAYER, value2=""
+            - STOP: value="(FOLLOW|ALL)" value2=""
             Hinweise:
             - Verwende IGNORE um Nachrichten zu irgnorieren die keine Aktionen verlangen.
-            - Koordinaten (value2) sind im Format "x z", z.B. "10 -10"
+            - Koordinaten sind im Format "x z", z.B. "10 -10"
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
             Wichtige Koordinaten:
             - Spawn: 0 0

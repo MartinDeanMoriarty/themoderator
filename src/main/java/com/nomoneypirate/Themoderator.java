@@ -7,11 +7,15 @@ import com.nomoneypirate.commands.ModCommands;
 import com.nomoneypirate.entity.ModAvatar;
 import com.nomoneypirate.actions.ModActions;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import net.minecraft.server.BannedPlayerEntry;
 import com.mojang.authlib.GameProfile;
+
+import static com.nomoneypirate.entity.ModAvatar.currentModeratorAvatar;
+import static com.nomoneypirate.entity.ModAvatar.searchModeratorAvatar;
 
 public class Themoderator implements ModInitializer {
 	public static final String MOD_ID = "themoderator";
@@ -42,7 +49,7 @@ public class Themoderator implements ModInitializer {
         // Register mod commands
         ModCommands.registerCommands();
 
-        // Register an event to intercept player join messages (server-side)
+        // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             // Get player name
             ServerPlayerEntity player = handler.getPlayer();
@@ -60,7 +67,7 @@ public class Themoderator implements ModInitializer {
             });
         });
 
-        // Register an event to Intercept chat messages (server-side)
+        //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             MinecraftServer server = sender.getServer();
             if (server == null) return;
@@ -79,7 +86,37 @@ public class Themoderator implements ModInitializer {
             });
         });
 
-        //System.out.println("Initialized.");
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            // Check for a lingering Mob, which may be still there after a server restart
+            // Search all dimensions
+            for (ServerWorld world : server.getWorlds()) {
+                if (searchModeratorAvatar(world)) {
+                    // An old Mob was found, lets reuse it and send a feedback to the llm
+                    String feedback = currentModeratorAvatar(world);
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                    break; // Just stop search when found one
+                }
+            }
+        });
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            // Server and worlds are ready, so send a feedback to the llm
+            String feedback = ConfigLoader.lang.feedback_17;
+            LlmClient.sendFeedbackAsync(feedback)
+                    .thenAccept(dec -> applyDecision(server, dec));
+
+            // Pull a chunk loader along with the Avatar if there is an Avatar
+            ServerWorld world = ModAvatar.findModeratorWorld(server);
+            if (world != null) {
+                Entity moderator = ModAvatar.findModeratorEntity(world);
+                if (moderator != null) {
+                    ModAvatar.updateChunkAnchor(world, moderator);
+                }
+            }
+        });
+
+        System.out.println(MOD_ID + "Initialized.");
         LOGGER.info("Initialized.");
     }
 
@@ -98,6 +135,29 @@ public class Themoderator implements ModInitializer {
                         .collect(Collectors.joining(", "));
                 // Feedback
                 String feedback = ConfigLoader.lang.feedback_01.formatted(list);
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case FOLLOW -> {
+                String feedback;
+                if (ModActions.startFollowPlayer((ServerWorld) ModAvatar.currentAvatarWorld, ModAvatar.currentAvatarId, decision.value())) {
+                    feedback = ConfigLoader.lang.feedback_20.formatted(decision.value());
+                } else {
+                    feedback = ConfigLoader.lang.feedback_18;
+                }
+                // Feedback
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+            case STOP -> {
+                String feedback;
+                if (ModActions.stopAllGoals((ServerWorld) ModAvatar.currentAvatarWorld, ModAvatar.currentAvatarId)) {
+                    feedback = ConfigLoader.lang.feedback_19;
+                } else {
+                    feedback = ConfigLoader.lang.feedback_18;
+                }
+                // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
@@ -128,7 +188,7 @@ public class Themoderator implements ModInitializer {
                 }
                 //MinecraftServer server = world.getServer();
                 if (ModAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ)) {
-                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value2(), ModAvatar.currentAvatarPosZ);
+                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ);
                 } else {
                     feedback = ConfigLoader.lang.feedback_04;
                 }
