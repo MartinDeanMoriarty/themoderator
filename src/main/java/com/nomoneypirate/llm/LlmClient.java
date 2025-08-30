@@ -110,6 +110,7 @@ public final class LlmClient {
     private static ModerationDecision parseDecision(String responseText) {
         String value = "";
         String value2 = "";
+        String value3 = "";
         try {
             // Pre parse -> See extractJson()
             JsonObject o = JsonParser.parseString(extractJson(responseText)).getAsJsonObject();
@@ -122,6 +123,10 @@ public final class LlmClient {
             // Does value2 exist?
             if (o.has("value2") && !o.get("value2").isJsonNull()) {
                 value2 = o.get("value2").getAsString();
+            }
+            // Does value3 exist?
+            if (o.has("value3") && !o.get("value3").isJsonNull()) {
+                value3 = o.get("value3").getAsString();
             }
 
             ModerationDecision.Action action = switch (actionStr) {
@@ -140,13 +145,13 @@ public final class LlmClient {
                 case "STOP" -> ModerationDecision.Action.STOP;
                 default -> ModerationDecision.Action.IGNORE;
             };
-            return new ModerationDecision(action, value, value2);
+            return new ModerationDecision(action, value, value2, value3);
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON
             LOGGER.info("Unclear output from llm model.");
             // Feedback
             String feedback = ConfigLoader.lang.feedback_12;
-            return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"");
+            return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"", "");
         }
     }
     // Pre parse

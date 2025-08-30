@@ -7,6 +7,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -33,8 +34,7 @@ public class ModAvatar {
     // This may happen when the server shuts down for some reason
     // and a mob with the name "The Moderator" may still exist.
     // In this case we simply "register" the mob as the new Avatar
-    // Only possible if the Avatar has a chunk loader
-    // because chunks must be loaded to find an entity
+    // Only possible if the mob had a chunk loader
     public static boolean searchModeratorAvatar(ServerWorld world) {
         boolean found = false;
         // Search Mob named "The Moderator"
@@ -73,21 +73,28 @@ public class ModAvatar {
     }
 
     // Spawn an Avatar with given type and coordinates
-    public static boolean spawnModeratorAvatar(ServerWorld world, String type, int x, int z) {
+    public static boolean spawnModeratorAvatar(MinecraftServer server, String dim, String type, int x, int z) {
+
+        System.out.println("[themoderator] Try spawnModeratorAvatar");
+        ServerWorld world = getWorldFromString(server, dim);
+        if (world == null) return false;
+
         // Get ground position
         BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
         // In case there is already an Avatar, we just remove it
-        // so there is no need to call despawnModeratorAvatar() to spawn a new one, but also makes sure there is only one
-        if (currentAvatarId != null) {
-            Entity old = world.getEntity(currentAvatarId);
-            if (old != null) old.discard();
-            currentAvatarId = null;
-            currentAvatarType = null;
-            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
-            currentAvatarPosX = null;
-            currentAvatarPosZ = null;
-            currentAvatarWorld = null;
-        }
+
+        if (despawnModeratorAvatar(world)) System.out.println("[themoderator] spawnModeratorAvatar old removed");
+//        if (currentAvatarId != null) {
+//            System.out.println("[themoderator] spawnModeratorAvatar old removed");
+//            Entity old = world.getEntity(currentAvatarId);
+//            if (old != null) old.discard();
+//            currentAvatarId = null;
+//            currentAvatarType = null;
+//            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
+//            currentAvatarPosX = null;
+//            currentAvatarPosZ = null;
+//            currentAvatarWorld = null;
+//        }
         // Mob-Typ
         EntityType<?> entityType = switch (type.toUpperCase(Locale.ROOT)) {
             case "CHICKEN" -> EntityType.CHICKEN;
@@ -105,7 +112,7 @@ public class ModAvatar {
         Entity entity = entityType.create(world, null);
         // Make sure entity is set
         if (entity == null) return false;
-
+        System.out.println("[themoderator] Try spawnModeratorAvatar 2");
         // Chunk loading
         world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, true);
         // Spawn the Avatar
@@ -127,7 +134,7 @@ public class ModAvatar {
         // CustomName
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
-
+        System.out.println("[themoderator] Try spawnModeratorAvatar return true");
         return true;
     }
 
@@ -191,6 +198,18 @@ public class ModAvatar {
             }
         }
         return null;
+    }
+
+    public static ServerWorld getWorldFromString(MinecraftServer server, String dimensionName) {
+        System.out.println("[themoderator] Try getWorldFromString");
+        RegistryKey<World> dimensionKey = switch (dimensionName.toLowerCase()) {
+            case "overworld" -> World.OVERWORLD;
+            case "nether" -> World.NETHER;
+            case "end" -> World.END;
+            default -> null;
+        };
+        System.out.println("[themoderator] getWorldFromString dimensionKey");
+        return dimensionKey != null ? server.getWorld(dimensionKey) : null;
     }
 
 }

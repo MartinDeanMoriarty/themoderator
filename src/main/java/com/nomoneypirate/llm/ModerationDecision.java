@@ -1,6 +1,6 @@
 package com.nomoneypirate.llm;
 
-public record ModerationDecision(Action action, String value, String value2) {
+public record ModerationDecision(Action action, String value, String value2, String value3) {
     public enum Action {
         CHAT,
         WHISPER,

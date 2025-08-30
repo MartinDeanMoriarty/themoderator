@@ -94,7 +94,7 @@ public class ModEvents {
 
     }
 
-    // Apply the decision and translate it into an action
+    // Apply the decisions and translate them into actions
     public static void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
 
@@ -141,19 +141,24 @@ public class ModEvents {
                 ModAvatar.currentAvatarPosX = 0;
                 ModAvatar.currentAvatarPosZ = 0;
 
-                if (!decision.value2().isEmpty()) {
-                    String[] parts = decision.value2().trim().split("\\s+");
+                System.out.println("[themoderator] Try SPAWNAVATAR.");
+
+                if (!decision.value3().isEmpty()) {
+                    System.out.println("[themoderator] value3 is set.");
+                    String[] parts = decision.value3().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
                             ModAvatar.currentAvatarPosX = Integer.parseInt(parts[0]);
                             ModAvatar.currentAvatarPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
+                            System.out.println("[themoderator] SPAWNAVATAR feedback_02_1.");
                             feedback = ConfigLoader.lang.feedback_02;
                             // Feedback
                             LlmClient.sendFeedbackAsync(feedback)
                                     .thenAccept(dec -> applyDecision(server, dec));
                         }
                     } else {
+                        System.out.println("[themoderator] SPAWNAVATAR feedback_02_2.");
                         feedback = ConfigLoader.lang.feedback_02;
                         // Feedback
                         LlmClient.sendFeedbackAsync(feedback)
@@ -161,20 +166,23 @@ public class ModEvents {
                     }
                 }
                 //MinecraftServer server = world.getServer();
-                if (ModAvatar.spawnModeratorAvatar(server.getOverworld(), decision.value(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ)) {
-                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ);
+                if (ModAvatar.spawnModeratorAvatar(server, decision.value(), decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ)) {
+                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value(), decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ);
+
                 } else {
+                    System.out.println("[themoderator] spawnModeratorAvatar feedback_04");
                     feedback = ConfigLoader.lang.feedback_04;
                 }
                 // Feedback
+                System.out.println("[themoderator]" + feedback);
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
 
             case DESPAWNAVATAR -> {
                 String feedback;
-
-                if (ModAvatar.despawnModeratorAvatar(server.getOverworld())) {
+                ServerWorld world = ModAvatar.findModeratorWorld(server);
+                if (ModAvatar.despawnModeratorAvatar(world)) {
                     feedback = ConfigLoader.lang.feedback_05;
                 } else {
                     feedback = ConfigLoader.lang.feedback_06;
@@ -187,10 +195,10 @@ public class ModEvents {
             case WHEREIS -> {
                 String feedback;
                 if (Objects.equals(decision.value(), "ME")) {
-                    feedback = ModActions.whereIs(server.getOverworld(), "", ModAvatar.currentAvatarId);
+                    feedback = ModActions.whereIs(server, "", ModAvatar.currentAvatarId);
                 }
                 else {
-                    feedback = ModActions.whereIs(server.getOverworld(), decision.value(), null);
+                    feedback = ModActions.whereIs(server, decision.value(), null);
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
