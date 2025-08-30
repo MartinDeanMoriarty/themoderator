@@ -37,7 +37,6 @@ public class ModAvatar {
     // In this case we simply "register" the mob as the new Avatar
     // Only possible if the mob had a chunk loader
     public static boolean searchModeratorAvatar(ServerWorld world) {
-        System.out.println("[themoderator] searchModeratorAvatar");
         boolean found = false;
         // Search Mob named "The Moderator"
         Entity entity = findModeratorEntity(world);
@@ -56,7 +55,6 @@ public class ModAvatar {
                 // Set chunk loader
                 world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, true);
                 found = true;
-                System.out.println("[themoderator] searchModeratorAvatar found = true");
             }
 
         return found;
@@ -80,20 +78,10 @@ public class ModAvatar {
 
         // Get ground position
         BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
-        // In case there is already an Avatar, we just remove it
 
-        if (despawnModeratorAvatar(world)) System.out.println("[themoderator] spawnModeratorAvatar old removed");
-//        if (currentAvatarId != null) {
-//            System.out.println("[themoderator] spawnModeratorAvatar old removed");
-//            Entity old = world.getEntity(currentAvatarId);
-//            if (old != null) old.discard();
-//            currentAvatarId = null;
-//            currentAvatarType = null;
-//            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
-//            currentAvatarPosX = null;
-//            currentAvatarPosZ = null;
-//            currentAvatarWorld = null;
-//        }
+        // In case there is already an Avatar, we just remove it
+        if (despawnModeratorAvatar(world)) LOGGER.info("Old Avatar removed");
+
         // Mob-Typ
         EntityType<?> entityType = switch (type.toUpperCase(Locale.ROOT)) {
             case "CHICKEN" -> EntityType.CHICKEN;
@@ -111,7 +99,6 @@ public class ModAvatar {
         Entity entity = entityType.create(world, null);
         // Make sure entity is set
         if (entity == null) return false;
-        System.out.println("[themoderator] Try spawnModeratorAvatar 2");
         // Chunk loading
         world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, true);
         // Spawn the Avatar
@@ -133,7 +120,6 @@ public class ModAvatar {
         // CustomName
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
-        System.out.println("[themoderator] Try spawnModeratorAvatar return true");
         entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
         return true;
     }
@@ -145,9 +131,9 @@ public class ModAvatar {
         if (currentAvatarId != null) {
             Entity e = world.getEntity(currentAvatarId);
             if (e != null) e.discard();
+            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
             currentAvatarId = null;
             currentAvatarType = null;
-            world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
             currentAvatarPosX = null;
             currentAvatarPosZ = null;
             currentAvatarWorld = null;
@@ -171,7 +157,6 @@ public class ModAvatar {
     }
 
     public static void updateChunkAnchor(ServerWorld world, Entity entity) {
-        System.out.println("[themoderator] updateChunkAnchor");
         ChunkPos currentChunk = new ChunkPos(entity.getBlockPos());
 
         if (!currentChunk.equals(lastChunkPos)) {
@@ -183,7 +168,6 @@ public class ModAvatar {
         }
     }
     public static Entity findModeratorEntity(ServerWorld world) {
-        System.out.println("[themoderator] findModeratorEntity");
         for (Entity entity : world.iterateEntities()) {
             if (entity.hasCustomName() &&
                     "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
@@ -194,7 +178,6 @@ public class ModAvatar {
         return null;
     }
     public static ServerWorld findModeratorWorld(MinecraftServer server) {
-        System.out.println("[themoderator] findModeratorWorld");
         for (ServerWorld world : server.getWorlds()) {
             if (findModeratorEntity(world) != null) {
                 return world;
@@ -204,14 +187,12 @@ public class ModAvatar {
     }
 
     public static ServerWorld getWorldFromString(MinecraftServer server, String dimensionName) {
-        System.out.println("[themoderator] Try getWorldFromString");
         RegistryKey<World> dimensionKey = switch (dimensionName.toLowerCase()) {
             case "overworld" -> World.OVERWORLD;
             case "nether" -> World.NETHER;
             case "end" -> World.END;
             default -> null;
         };
-        System.out.println("[themoderator] getWorldFromString dimensionKey");
         return dimensionKey != null ? server.getWorld(dimensionKey) : null;
     }
 

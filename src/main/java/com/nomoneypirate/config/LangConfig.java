@@ -15,14 +15,14 @@ public class LangConfig {
     public String feedback_11 = "Spieler %s erfolgreich gebannt mit Grund: %s";
     public String feedback_12 = "Etwas ging schief. Verwende nur JSON!";
     public String feedback_13 = "Spieler '%s' ist in Dimension %s bei X: %d, Y: %d, Z: %d";
-    public String feedback_14 = "Avatar ist in Dimension %s bei X: %d, Y: %d, Z: %d";
+    public String feedback_14 = "Dein Avatar ist in Dimension %s bei X: %d, Y: %d, Z: %d";
     public String feedback_15 = "Kein Avatar vorhanden";
-    public String feedback_16 = "Avatar ist ein %s in Dimension %s bei X: %d, Z: %d";
+    public String feedback_16 = "Dein Avatar ist ein %s in Dimension %s bei X: %d, Z: %d";
     public String feedback_17 = "Der Server wurde (neu)gestartet und ist bereit für Spieler.";
     public String feedback_18 = "Aktion war nicht möglich.";
     public String feedback_19 = "Alles gestoppt.";
-    public String feedback_20 = "Avatar folgt nun Spieler %s.";
-    public String feedback_21 = "Avatar folgt nun nicht mehr Spieler %s.";
+    public String feedback_20 = "Dein Avatar folgt nun Spieler %s.";
+    public String feedback_21 = "Dein Avatar folgt nun nicht mehr dem Spieler.";
     // The following prompts are important to llm communication
     // Usually no change needed, but you may want to translate to different language
     public String systemPrompt = """

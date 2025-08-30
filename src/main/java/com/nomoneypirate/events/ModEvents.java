@@ -1,13 +1,13 @@
 package com.nomoneypirate.events;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
+import static com.nomoneypirate.entity.ModAvatar.*;
+
 import com.mojang.authlib.GameProfile;
 import com.nomoneypirate.actions.ModActions;
 import com.nomoneypirate.config.ConfigLoader;
-import com.nomoneypirate.entity.ModAvatar;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -18,19 +18,20 @@ import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.nomoneypirate.entity.ModAvatar.currentModeratorAvatar;
-import static com.nomoneypirate.entity.ModAvatar.searchModeratorAvatar;
-
 public class ModEvents {
 
+    static boolean checked = false;
+
     public static void registerEvents() {
-// Intercept player join messages (server-side)
+        // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             // Get player name
             ServerPlayerEntity player = handler.getPlayer();
@@ -67,35 +68,31 @@ public class ModEvents {
             });
         });
 
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            System.out.println("[themoderator] SERVER_STARTED EVENT");
-            // Check for a lingering Mob, which may be still there after a server restart
-            // Search all dimensions
-            ServerWorld world = ModAvatar.findModeratorWorld(server);
-            if (world != null) {
-                if (searchModeratorAvatar(world)) {
-                    System.out.println("[themoderator] searchModeratorAvatar true");
-                    // An old Mob was found, lets reuse it and send a feedback to the llm
-                    String feedback = currentModeratorAvatar();
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
-                }
-            }
-        });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            System.out.println("[themoderator] END_SERVER_TICK EVENT");
-            if (ModAvatar.currentAvatarId != null) {
+
+            ServerWorld world = findModeratorWorld(server);
+            if (checked && currentAvatarId != null) {
                 // Pull a chunk loader along with the Avatar if there is an Avatar
-                ServerWorld world = ModAvatar.findModeratorWorld(server);
                 if (world != null) {
-                    System.out.println("[themoderator] findModeratorEntity world != null");
-                    Entity moderator = ModAvatar.findModeratorEntity(world);
+                    Entity moderator = findModeratorEntity(world);
                     if (moderator != null) {
-                        System.out.println("[themoderator] findModeratorEntity moderator != null");
-                        ModAvatar.updateChunkAnchor(world, moderator);
+                        updateChunkAnchor(world, moderator);
                     }
                 }
+                // Let's check once for a lingering mob at server start
+            } else {
+                if (world != null) {
+                    // If an old Mob was found, lets reuse it
+                    if (searchModeratorAvatar(world)) {
+                        String feedback = currentModeratorAvatar();
+                        LOGGER.info(feedback);
+                        //LlmClient.sendFeedbackAsync(feedback)
+                        //        .thenAccept(dec -> applyDecision(server, dec));
+
+                    }
+                }
+                checked = true;
             }
         });
 
@@ -122,7 +119,7 @@ public class ModEvents {
 
             case FOLLOW -> {
                 String feedback;
-                if (ModActions.startFollowPlayer((ServerWorld) ModAvatar.currentAvatarWorld, ModAvatar.currentAvatarId, decision.value())) {
+                if (ModActions.startFollowPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value())) {
                     feedback = ConfigLoader.lang.feedback_20.formatted(decision.value());
                 } else {
                     feedback = ConfigLoader.lang.feedback_18;
@@ -131,12 +128,24 @@ public class ModEvents {
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
+
             case STOP -> {
-                String feedback;
-                if (ModActions.stopAllGoals((ServerWorld) ModAvatar.currentAvatarWorld, ModAvatar.currentAvatarId)) {
-                    feedback = ConfigLoader.lang.feedback_19;
-                } else {
-                    feedback = ConfigLoader.lang.feedback_18;
+                String feedback = "";
+                switch (decision.value()) {
+                    case "ALL" -> {
+                        if (ModActions.stopAllGoals((ServerWorld) currentAvatarWorld, currentAvatarId)) {
+                            feedback = ConfigLoader.lang.feedback_19;
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                    }
+                    case "FOLLOW" -> {
+                        if (ModActions.stopAllGoals((ServerWorld) currentAvatarWorld, currentAvatarId)) {
+                            feedback = ConfigLoader.lang.feedback_21;
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                    }
                 }
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
@@ -145,15 +154,15 @@ public class ModEvents {
 
             case SPAWNAVATAR -> {
                 String feedback;
-                ModAvatar.currentAvatarPosX = 0;
-                ModAvatar.currentAvatarPosZ = 0;
+                currentAvatarPosX = 0;
+                currentAvatarPosZ = 0;
 
                 if (!decision.value3().isEmpty()) {
                     String[] parts = decision.value3().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
-                            ModAvatar.currentAvatarPosX = Integer.parseInt(parts[0]);
-                            ModAvatar.currentAvatarPosZ = Integer.parseInt(parts[1]);
+                            currentAvatarPosX = Integer.parseInt(parts[0]);
+                            currentAvatarPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
                             feedback = ConfigLoader.lang.feedback_02;
                             // Feedback
@@ -168,8 +177,8 @@ public class ModEvents {
                     }
                 }
                 //MinecraftServer server = world.getServer();
-                if (ModAvatar.spawnModeratorAvatar(server, decision.value(), decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ)) {
-                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value(), decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ);
+                if (spawnModeratorAvatar(server, decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ)) {
+                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ);
 
                 } else {
                     feedback = ConfigLoader.lang.feedback_04;
@@ -181,8 +190,8 @@ public class ModEvents {
 
             case DESPAWNAVATAR -> {
                 String feedback;
-                ServerWorld world = ModAvatar.findModeratorWorld(server);
-                if (ModAvatar.despawnModeratorAvatar(world)) {
+                ServerWorld world = findModeratorWorld(server);
+                if (despawnModeratorAvatar(world)) {
                     feedback = ConfigLoader.lang.feedback_05;
                 } else {
                     feedback = ConfigLoader.lang.feedback_06;
@@ -195,7 +204,7 @@ public class ModEvents {
             case WHEREIS -> {
                 String feedback;
                 if (Objects.equals(decision.value(), "ME")) {
-                    feedback = ModActions.whereIs(server, "", ModAvatar.currentAvatarId);
+                    feedback = ModActions.whereIs(server, "", currentAvatarId);
                 }
                 else {
                     feedback = ModActions.whereIs(server, decision.value(), null);
@@ -265,19 +274,7 @@ public class ModEvents {
                             }
                         }
                         if (ConfigLoader.config.useBanlist) {
-                            GameProfile profile = player.getGameProfile();
-                            Date now = new Date();
-                            String reason = decision.value2();
-                            String source = "[The Moderator]";
-                            Date expiry = null; // null = permanent
-
-                            BannedPlayerEntry entry = new BannedPlayerEntry(
-                                    profile,
-                                    now,
-                                    source,
-                                    expiry,
-                                    reason
-                            );
+                            BannedPlayerEntry entry = getBannedPlayerEntry(decision, player);
                             server.getPlayerManager().getUserBanList().add(entry);
                             try {
                                 server.getPlayerManager().getUserBanList().save();
@@ -297,6 +294,22 @@ public class ModEvents {
                 // Do nothing
             }
         }
+    }
+
+    private static @NotNull BannedPlayerEntry getBannedPlayerEntry(ModerationDecision decision, ServerPlayerEntity player) {
+        GameProfile profile = player.getGameProfile();
+        Date now = new Date();
+        String reason = decision.value2();
+        String source = "[The Moderator]";
+        //Date expiry = null; // null = permanent
+
+        return new BannedPlayerEntry(
+                profile,
+                now,
+                source,
+                null,
+                reason
+        );
     }
 
 }
