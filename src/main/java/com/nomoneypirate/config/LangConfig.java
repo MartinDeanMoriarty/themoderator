@@ -21,7 +21,8 @@ public class LangConfig {
     public String feedback_17 = "Der Server wurde (neu)gestartet und ist bereit für Spieler.";
     public String feedback_18 = "Aktion war nicht möglich.";
     public String feedback_19 = "Alles gestoppt.";
-    public String feedback_20 = "Folge Spieler %s.";
+    public String feedback_20 = "Avatar folgt nun Spieler %s.";
+    public String feedback_21 = "Avatar folgt nun nicht mehr Spieler %s.";
     // The following prompts are important to llm communication
     // Usually no change needed, but you may want to translate to different language
     public String systemPrompt = """
@@ -65,6 +66,7 @@ public class LangConfig {
             - FOLLOW: value=PLAYER, value2="", value3=""
             - STOP: value="(FOLLOW|ALL)" value2="", value3=""
             Hinweise:
+            - Mit Avatar ist dein eigenes Avatar gemeinst dass du in der Welt spawnen kannst.
             - Verwende IGNORE um Nachrichten zu irgnorieren die keine Aktionen verlangen.
             - Koordinaten sind im Format "x z", z.B. "10 -10"
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
