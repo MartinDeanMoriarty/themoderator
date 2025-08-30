@@ -63,10 +63,12 @@ public class LangConfig {
             - SPAWNAVATAR: "value": (OVERWORLD|NETHER|END) value2=(CHICKEN|COW|PIG|HORSE|CHEEP|GOAT|FROG), value3="x z"
             - DESPAWNAVATAR: value="", value2="", value3=""
             - WHEREIS: value=(PLAYER|ME), value2="", value3=""
+            - FEEDBACK: value="TEXT", value2="", value3=""
             - FOLLOW: value=PLAYER, value2="", value3=""
             - STOP: value="(FOLLOW|ALL)" value2="", value3=""
             Hinweise:
-            - Mit Avatar ist dein eigenes Avatar gemeinst dass du in der Welt spawnen kannst.
+            - Du kannst dein eigenes Avatar spawnen um mit der Welt oder Spielern zu interargieren.
+            - Du kannst Aktionen logisch verketten in dem du auf Feedback mit einer Aktion reagierst oder selbst die Aktion FEEDBACK verwendest.
             - Verwende IGNORE um Nachrichten zu irgnorieren die keine Aktionen verlangen.
             - Koordinaten sind im Format "x z", z.B. "10 -10"
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.

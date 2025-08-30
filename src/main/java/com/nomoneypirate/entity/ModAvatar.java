@@ -10,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -36,12 +37,11 @@ public class ModAvatar {
     // In this case we simply "register" the mob as the new Avatar
     // Only possible if the mob had a chunk loader
     public static boolean searchModeratorAvatar(ServerWorld world) {
+        System.out.println("[themoderator] searchModeratorAvatar");
         boolean found = false;
         // Search Mob named "The Moderator"
-        for (Entity entity : world.iterateEntities()) {
-            if (entity.hasCustomName() &&
-                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
-                    !(entity instanceof PlayerEntity)) {
+        Entity entity = findModeratorEntity(world);
+            if (entity != null) {
                 currentAvatarId = entity.getUuid();
                 currentAvatarType = entity.getType().toString();
                 currentAvatarPosX = entity.getBlockX();
@@ -56,8 +56,9 @@ public class ModAvatar {
                 // Set chunk loader
                 world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, true);
                 found = true;
+                System.out.println("[themoderator] searchModeratorAvatar found = true");
             }
-        }
+
         return found;
     }
 
@@ -74,8 +75,6 @@ public class ModAvatar {
 
     // Spawn an Avatar with given type and coordinates
     public static boolean spawnModeratorAvatar(MinecraftServer server, String dim, String type, int x, int z) {
-
-        System.out.println("[themoderator] Try spawnModeratorAvatar");
         ServerWorld world = getWorldFromString(server, dim);
         if (world == null) return false;
 
@@ -135,6 +134,7 @@ public class ModAvatar {
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
         System.out.println("[themoderator] Try spawnModeratorAvatar return true");
+        entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
         return true;
     }
 
@@ -171,6 +171,7 @@ public class ModAvatar {
     }
 
     public static void updateChunkAnchor(ServerWorld world, Entity entity) {
+        System.out.println("[themoderator] updateChunkAnchor");
         ChunkPos currentChunk = new ChunkPos(entity.getBlockPos());
 
         if (!currentChunk.equals(lastChunkPos)) {
@@ -182,6 +183,7 @@ public class ModAvatar {
         }
     }
     public static Entity findModeratorEntity(ServerWorld world) {
+        System.out.println("[themoderator] findModeratorEntity");
         for (Entity entity : world.iterateEntities()) {
             if (entity.hasCustomName() &&
                     "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
@@ -192,6 +194,7 @@ public class ModAvatar {
         return null;
     }
     public static ServerWorld findModeratorWorld(MinecraftServer server) {
+        System.out.println("[themoderator] findModeratorWorld");
         for (ServerWorld world : server.getWorlds()) {
             if (findModeratorEntity(world) != null) {
                 return world;

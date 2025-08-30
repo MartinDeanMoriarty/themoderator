@@ -68,26 +68,33 @@ public class ModEvents {
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            System.out.println("[themoderator] SERVER_STARTED EVENT");
             // Check for a lingering Mob, which may be still there after a server restart
             // Search all dimensions
-            for (ServerWorld world : server.getWorlds()) {
+            ServerWorld world = ModAvatar.findModeratorWorld(server);
+            if (world != null) {
                 if (searchModeratorAvatar(world)) {
+                    System.out.println("[themoderator] searchModeratorAvatar true");
                     // An old Mob was found, lets reuse it and send a feedback to the llm
                     String feedback = currentModeratorAvatar();
                     LlmClient.sendFeedbackAsync(feedback)
                             .thenAccept(dec -> applyDecision(server, dec));
-                    break; // Just stop search when found one
                 }
             }
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            // Pull a chunk loader along with the Avatar if there is an Avatar
-            ServerWorld world = ModAvatar.findModeratorWorld(server);
-            if (world != null) {
-                Entity moderator = ModAvatar.findModeratorEntity(world);
-                if (moderator != null) {
-                    ModAvatar.updateChunkAnchor(world, moderator);
+            System.out.println("[themoderator] END_SERVER_TICK EVENT");
+            if (ModAvatar.currentAvatarId != null) {
+                // Pull a chunk loader along with the Avatar if there is an Avatar
+                ServerWorld world = ModAvatar.findModeratorWorld(server);
+                if (world != null) {
+                    System.out.println("[themoderator] findModeratorEntity world != null");
+                    Entity moderator = ModAvatar.findModeratorEntity(world);
+                    if (moderator != null) {
+                        System.out.println("[themoderator] findModeratorEntity moderator != null");
+                        ModAvatar.updateChunkAnchor(world, moderator);
+                    }
                 }
             }
         });
@@ -141,24 +148,19 @@ public class ModEvents {
                 ModAvatar.currentAvatarPosX = 0;
                 ModAvatar.currentAvatarPosZ = 0;
 
-                System.out.println("[themoderator] Try SPAWNAVATAR.");
-
                 if (!decision.value3().isEmpty()) {
-                    System.out.println("[themoderator] value3 is set.");
                     String[] parts = decision.value3().trim().split("\\s+");
                     if (parts.length == 2) {
                         try {
                             ModAvatar.currentAvatarPosX = Integer.parseInt(parts[0]);
                             ModAvatar.currentAvatarPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            System.out.println("[themoderator] SPAWNAVATAR feedback_02_1.");
                             feedback = ConfigLoader.lang.feedback_02;
                             // Feedback
                             LlmClient.sendFeedbackAsync(feedback)
                                     .thenAccept(dec -> applyDecision(server, dec));
                         }
                     } else {
-                        System.out.println("[themoderator] SPAWNAVATAR feedback_02_2.");
                         feedback = ConfigLoader.lang.feedback_02;
                         // Feedback
                         LlmClient.sendFeedbackAsync(feedback)
@@ -170,11 +172,9 @@ public class ModEvents {
                     feedback = ConfigLoader.lang.feedback_03.formatted(decision.value(), decision.value2(), ModAvatar.currentAvatarPosX, ModAvatar.currentAvatarPosZ);
 
                 } else {
-                    System.out.println("[themoderator] spawnModeratorAvatar feedback_04");
                     feedback = ConfigLoader.lang.feedback_04;
                 }
                 // Feedback
-                System.out.println("[themoderator]" + feedback);
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
             }
