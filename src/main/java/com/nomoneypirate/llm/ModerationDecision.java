@@ -8,12 +8,18 @@ public record ModerationDecision(Action action, String value, String value2, Str
         KICK,
         BAN,
         IGNORE,
+        WHEREIS,
+        FEEDBACK,
         PLAYERLIST,
         SPAWNAVATAR,
         DESPAWNAVATAR,
-        WHEREIS,
-        FEEDBACK,
-        FOLLOW,
-        STOP
+        STOP,
+        FOLLOWPLAYER,
+        LOOKATPLAYER,
+        GOTOPLAYER,
+        GOTOPOSITION,
+        MOVEAROUND,
+        TELEPORTPLAYER,
+        TELEPORTPOSITION
     }
 }

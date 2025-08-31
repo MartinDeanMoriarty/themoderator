@@ -6,19 +6,16 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.Vec3d;
 
 import static com.nomoneypirate.events.ModEvents.applyDecision;
 
-public class FollowPlayerGoal extends Goal {
+public class GotoPlayerGoal  extends Goal {
     private final MobEntity mob;
     private final PlayerEntity target;
     private final double speed;
-
-    private Vec3d lastPosition = Vec3d.ZERO;
     private int stuckCounter = 0;
 
-    public FollowPlayerGoal(MobEntity mob, PlayerEntity target, double speed) {
+    public GotoPlayerGoal(MobEntity mob, PlayerEntity target, double speed) {
         this.mob = mob;
         this.target = target;
         this.speed = speed;
@@ -40,21 +37,27 @@ public class FollowPlayerGoal extends Goal {
         if (distanceSq > stopDistanceSq) {
             mob.getNavigation().startMovingTo(target, speed);
 
-            // Stuck detection
-            Vec3d currentPos = mob.getPos();
-            if (currentPos.squaredDistanceTo(lastPosition) < 0.01) {
+            if (mob.getNavigation().isIdle()) {
                 stuckCounter++;
-                if (stuckCounter > 40) {
-                    String feedback = ConfigLoader.lang.feedback_28; // z. B. "Avatar steckt fest"
+                if (stuckCounter > 40) { // 2 seconds at 20 TPS
+                    // Mob is stuck or target unreachable
+                    String feedback = ConfigLoader.lang.feedback_28;
+                    // Feedback to llm
                     LlmClient.sendFeedbackAsync(feedback)
                             .thenAccept(dec -> applyDecision(server, dec));
                 }
             } else {
-                stuckCounter = 0;
+                stuckCounter = 0; // Reset when movement is detected
             }
-            lastPosition = currentPos;
         } else {
-            mob.getNavigation().stop(); // Mob bleibt stehen, wenn er nah genug ist
+            mob.getNavigation().stop();
+            // Mob has reached target
+            String feedback = ConfigLoader.lang.feedback_29.formatted(target);
+            // Feedback to llm
+            LlmClient.sendFeedbackAsync(feedback)
+                    .thenAccept(dec -> applyDecision(server, dec));
+
         }
     }
+
 }

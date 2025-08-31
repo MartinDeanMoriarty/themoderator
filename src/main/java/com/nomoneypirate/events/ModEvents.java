@@ -102,6 +102,45 @@ public class ModEvents {
     public static void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
 
+            case STOP -> {
+                String feedback = "";
+                switch (decision.value()) {
+                    case "ALL" -> {
+                        if (ModActions.stopAllGoals((ServerWorld) currentAvatarWorld, currentAvatarId)) {
+                            feedback = ConfigLoader.lang.feedback_19;
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                    }
+                    case "FOLLOWING" -> {
+                        if (ModActions.stopSpecificGoal((ServerWorld) currentAvatarWorld, currentAvatarId, "FOLLOWING")) {
+                            feedback = ConfigLoader.lang.feedback_21;
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                    }
+
+                    case "LOOKINGAT" -> {
+                        if (ModActions.stopSpecificGoal((ServerWorld) currentAvatarWorld, currentAvatarId, "LOOKINGAT")) {
+                            feedback = ConfigLoader.lang.feedback_23;
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                    }
+
+                    case "MOVINGAROUND" -> {
+                        if (ModActions.stopSpecificGoal((ServerWorld) currentAvatarWorld, currentAvatarId, "MOVINGAROUND")) {
+                            feedback = ConfigLoader.lang.feedback_26;
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                    }
+                }
+                // Feedback
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
             case CHAT -> server.getPlayerManager().broadcast(
                     Text.literal("The Moderator: " + decision.value()),false
             );
@@ -117,39 +156,59 @@ public class ModEvents {
                         .thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case FOLLOW -> {
+            case TELEPORTPLAYER -> {
                 String feedback;
-                if (ModActions.startFollowPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value())) {
-                    feedback = ConfigLoader.lang.feedback_20.formatted(decision.value());
-                } else {
-                    feedback = ConfigLoader.lang.feedback_18;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    if (Objects.equals(decision.value(), "AVATAR")) {
+                        feedback = ModActions.teleportAvatar(world, currentAvatarId, decision.value2());
+                    }
+                    else {
+                        feedback = ModActions.teleportPlayer(world, currentAvatarId, decision.value());
+                    }
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
                 }
-                // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case STOP -> {
-                String feedback = "";
-                switch (decision.value()) {
-                    case "ALL" -> {
-                        if (ModActions.stopAllGoals((ServerWorld) currentAvatarWorld, currentAvatarId)) {
-                            feedback = ConfigLoader.lang.feedback_19;
-                        } else {
-                            feedback = ConfigLoader.lang.feedback_18;
+            case TELEPORTPOSITION -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                double posX = 0;
+                double posZ = 0;
+
+                if (!decision.value2().isEmpty()) {
+                    String[] parts = decision.value2().trim().split("\\s+");
+                    if (parts.length == 2) {
+                        try {
+                            posX = Integer.parseInt(parts[0]);
+                            posZ = Integer.parseInt(parts[1]);
+                        } catch (NumberFormatException e) {
+                            feedback = ConfigLoader.lang.feedback_02;
+                            // Feedback
+                            LlmClient.sendFeedbackAsync(feedback)
+                                    .thenAccept(dec -> applyDecision(server, dec));
                         }
-                    }
-                    case "FOLLOW" -> {
-                        if (ModActions.stopAllGoals((ServerWorld) currentAvatarWorld, currentAvatarId)) {
-                            feedback = ConfigLoader.lang.feedback_21;
-                        } else {
-                            feedback = ConfigLoader.lang.feedback_18;
-                        }
+                    } else {
+                        feedback = ConfigLoader.lang.feedback_02;
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
                     }
                 }
-                // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+
+                if (world != null) {
+                    if (Objects.equals(decision.value(), "AVATAR")) {
+                        feedback = ModActions.teleportPositionAvatar(world, currentAvatarId, posX, posZ);
+                    }
+                    else {
+                        feedback = ModActions.teleportPositionPlayer(world, decision.value(), posX, posZ);
+                    }
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
             }
 
             case SPAWNAVATAR -> {
@@ -203,7 +262,7 @@ public class ModEvents {
 
             case WHEREIS -> {
                 String feedback;
-                if (Objects.equals(decision.value(), "ME")) {
+                if (Objects.equals(decision.value(), "AVATAR")) {
                     feedback = ModActions.whereIs(server, "", currentAvatarId);
                 }
                 else {
@@ -221,7 +280,38 @@ public class ModEvents {
                         .thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case WHISPER, WARN, KICK, BAN -> {
+            case GOTOPOSITION -> {
+                String feedback;
+                double posX = 0;
+                double posZ = 0;
+
+                if (!decision.value().isEmpty()) {
+                    String[] parts = decision.value().trim().split("\\s+");
+                    if (parts.length == 2) {
+                        try {
+                            posX = Integer.parseInt(parts[0]);
+                            posZ = Integer.parseInt(parts[1]);
+                        } catch (NumberFormatException e) {
+                            feedback = ConfigLoader.lang.feedback_02;
+                            // Feedback
+                            LlmClient.sendFeedbackAsync(feedback)
+                                    .thenAccept(dec -> applyDecision(server, dec));
+                        }
+                    } else {
+                        feedback = ConfigLoader.lang.feedback_02;
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                    }
+                }
+
+                feedback = ModActions.startGotoPosition((ServerWorld) currentAvatarWorld, currentAvatarId, posX, posZ);
+                // Feedback
+                LlmClient.sendFeedbackAsync(feedback)
+                        .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case WHISPER, WARN, KICK, BAN, FOLLOWPLAYER, LOOKATPLAYER, GOTOPLAYER, MOVEAROUND -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
@@ -253,6 +343,49 @@ public class ModEvents {
                         LlmClient.sendFeedbackAsync(feedback)
                                 .thenAccept(dec -> applyDecision(server, dec));
                         LOGGER.info(feedback);
+                    }
+
+                    case FOLLOWPLAYER -> {
+                        String feedback;
+                        if (ModActions.startFollowPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value())) {
+                            feedback = ConfigLoader.lang.feedback_20.formatted(decision.value());
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                    }
+
+                    case LOOKATPLAYER -> {
+                        String feedback;
+                        if (ModActions.startLookingAtPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value())) {
+                            feedback = ConfigLoader.lang.feedback_22.formatted(decision.value());
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                    }
+
+                    case GOTOPLAYER -> {
+                        String feedback = ModActions.startGotoPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value());
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
+                    }
+
+                    case MOVEAROUND -> {
+                        String feedback;
+                        if (ModActions.startMoveAround((ServerWorld) currentAvatarWorld, currentAvatarId, Double.parseDouble(decision.value()))) {
+                            feedback = ConfigLoader.lang.feedback_25.formatted(decision.value());
+                        } else {
+                            feedback = ConfigLoader.lang.feedback_18;
+                        }
+                        // Feedback
+                        LlmClient.sendFeedbackAsync(feedback)
+                                .thenAccept(dec -> applyDecision(server, dec));
                     }
 
                     case BAN -> {
