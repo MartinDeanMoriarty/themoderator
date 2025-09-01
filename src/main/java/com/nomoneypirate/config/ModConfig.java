@@ -13,7 +13,7 @@ public class ModConfig {
     // But it is possible to use both.
     public Boolean useBanlist = false;
     // Moderation schedule interval in minutes
-    public Integer scheduleInterval = 10;
+    public Integer scheduleInterval = 1;
     // Activation keywords
     public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
     // Usually no change needed.
@@ -25,6 +25,7 @@ public class ModConfig {
     public String model = "mistral-nemo";
     // LLM Logging
     public Boolean llmLogging = true;
-    public String logFilename = "themoderator_llm.log";
-
+    public String llmLogFilename = "themoderator_llm.log";
+    public Boolean scheduleLogging = true;
+    public String scheduleLogFilename = "themoderator_schedule%s.log";
 }

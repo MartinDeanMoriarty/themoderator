@@ -31,8 +31,6 @@ public class Themoderator implements ModInitializer {
         ModCommands.registerCommands();
         //Register mod events
         ModEvents.registerEvents();
-        // Start moderation scheduler
-        ModerationScheduler.start();
 
         System.out.println(MOD_ID + " -Initialized.");
         LOGGER.info("Initialized.");

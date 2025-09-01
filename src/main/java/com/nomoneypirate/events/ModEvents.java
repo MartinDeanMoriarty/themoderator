@@ -2,7 +2,6 @@ package com.nomoneypirate.events;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
 import static com.nomoneypirate.entity.ModAvatar.*;
-
 import com.mojang.authlib.GameProfile;
 import com.nomoneypirate.actions.ModActions;
 import com.nomoneypirate.config.ConfigLoader;
@@ -29,8 +28,58 @@ import java.util.stream.Collectors;
 public class ModEvents {
 
     static boolean checked = false;
+    private static int tickCounter = 0;
+    private static final int TICKS_PER_MINUTE = 20 * 60;
+    private static final int INTERVAL_MINUTES = ConfigLoader.config.scheduleInterval;
+    public static final int INTERVAL_TICKS = TICKS_PER_MINUTE * INTERVAL_MINUTES;
 
     public static void registerEvents() {
+
+        // "Update-Loop" and World-Ready event
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            // Scheduler
+            tickCounter++;
+            if (tickCounter >= INTERVAL_TICKS) {
+                tickCounter = 0;
+                ModerationScheduler.runScheduledTask(server);
+            }
+
+            ServerWorld world = findModeratorWorld(server);
+            if (checked && currentAvatarId != null) {
+                // Pull a chunk loader along with the Avatar if there is an Avatar
+                if (world != null) {
+                    Entity moderator = findModeratorEntity(world);
+                    if (moderator != null) {
+                        updateChunkAnchor(world, moderator);
+                    }
+                }
+
+            }
+            // World-Ready event
+            // Let's check once for a lingering mob at server start
+            // We can also let the llm know when the server (re)started
+            else if (!checked) {
+                if (world != null) {
+                    StringBuilder feedback = new StringBuilder();
+                    // feedback.append(ConfigLoader.lang.feedback_17);
+                    // Search for lingering mob
+                    if (searchModeratorAvatar(world)) {
+                        System.out.println("themoderator -Found Avatar.");
+                        feedback.append(" Avatar: ").append(currentModeratorAvatar());
+                    }
+                    // Only send if there is a feedback
+                    // if (!feedback.isEmpty()) {
+                     System.out.println("themoderator -Sending Feedback:" + feedback);
+                    //LOGGER.info(feedback.toString());
+                    // LlmClient.sendFeedbackAsync(feedback.toString())
+                    //        .thenAccept(dec -> applyDecision(server, dec));
+                    //}
+                    checked = true;
+                }
+
+            }
+        });
+
         // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             // Get player name
@@ -57,7 +106,6 @@ public class ModEvents {
 
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
-
             MinecraftServer server = sender.getServer();
             if (server == null) return;
             // Get player name and chat content
@@ -80,51 +128,6 @@ public class ModEvents {
                 });
             }
 
-        });
-
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            ServerWorld world = findModeratorWorld(server);
-            if (checked && currentAvatarId != null) {
-                // Pull a chunk loader along with the Avatar if there is an Avatar
-                if (world != null) {
-                    Entity moderator = findModeratorEntity(world);
-                    if (moderator != null) {
-                        updateChunkAnchor(world, moderator);
-                    }
-                }
-                // Let's check once for a lingering mob at server start
-                // We can also let the llm know when the server (re)started
-            } else if (!checked) {
-                if (world != null) {
-
-                    StringBuilder feedback = new StringBuilder();
-                    // Dedicated Server
-                    if (server.isDedicated()) {
-                        feedback.append("Status: Dedicated Server - ").append(ConfigLoader.lang.feedback_17);
-                        System.out.println("themoderator -is Dedicated.");
-                    }
-                    else
-                    {// Integrated Server
-                        System.out.println("themoderator -is Integrated.");
-                            // Let's maybe NOT use a feedback when it is an integrated server
-                            // because the player joining is like starting the server
-                            // feedback.append("Status: Integrated Server - ").append(ConfigLoader.lang.feedback_17);
-                    }
-                    // Search for lingering mob
-                    if (searchModeratorAvatar(world)) {
-                        System.out.println("themoderator -Found Avatar.");
-                        feedback.append(" Avatar: ").append(currentModeratorAvatar());
-                    }
-                    // Only send if there is a feedback
-                    if (!feedback.isEmpty()) {
-                        System.out.println("themoderator -Sending Feedback.");
-                        LOGGER.info(feedback.toString());
-                        LlmClient.sendFeedbackAsync(feedback.toString())
-                                .thenAccept(dec -> applyDecision(server, dec));
-                    }
-                }
-                checked = true;
-            }
         });
 
     }

@@ -54,7 +54,7 @@ public final class LlmClient {
 
         // Input logging
         String jsonBody = GSON.toJson(body);
-        if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.logFilename, "[" + timestamp + "] Request:\n" + jsonBody);
+        if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.llmLogFilename, "[" + timestamp + "] Request:\n" + jsonBody);
 
         // Get response
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
@@ -66,7 +66,7 @@ public final class LlmClient {
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
                     // Output logging
-                    if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.logFilename, "[" + timestamp + "] Response:\n" + responseText);
+                    if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.llmLogFilename, "[" + timestamp + "] Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
     }
@@ -91,7 +91,7 @@ public final class LlmClient {
 
         // Input logging
         String jsonBody = GSON.toJson(body);
-        if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.logFilename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
+        if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.llmLogFilename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
 
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
@@ -101,7 +101,7 @@ public final class LlmClient {
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
                     // Output logging
-                    if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.logFilename, "[" + timestamp + "] Feedback Response:\n" + responseText);
+                    if (ConfigLoader.config.llmLogging) logToFile(ConfigLoader.config.llmLogFilename, "[" + timestamp + "] Feedback Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
     }
