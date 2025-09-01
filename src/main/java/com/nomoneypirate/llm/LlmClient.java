@@ -127,12 +127,13 @@ public final class LlmClient {
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
+        String jsonBody = GSON.toJson(body);
 
         // Input logging
-        String jsonBody = GSON.toJson(body);
-        String logtimestamp = LocalDateTime.now().toString();
-        String filename = ConfigLoader.config.scheduleLogFilename + logtimestamp + ".log";
-        if (ConfigLoader.config.scheduleLogging) logToFile(filename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+        String logTimeStamp = LocalDateTime.now().format(formatter);
+        String filename = ConfigLoader.config.scheduleLogFilename + logTimeStamp + ".log";
+        if (ConfigLoader.config.scheduleLogging) logToFile(filename, "Summary:\n" + jsonBody);
 
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
