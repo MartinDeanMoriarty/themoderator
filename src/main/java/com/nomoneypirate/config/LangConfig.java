@@ -111,7 +111,7 @@ public class LangConfig {
             - KILLPLAYER: value:"SPIELERNAME", value2:"", value3:""
             - GIVEPLAYER: value:"SPIELERNAME", value2:"ItemId", value3:""
             - CHANGEWEATHER: value:"(CLEAR|RAIN|THUNDER)", value2:"", value3:""
-            - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)", value2:"", value3:""            
+            - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)", value2:"", value3:""
             - STOP: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" value2:"", value3:""
             Hinweise:
             - Spawne deinen eigenen Avatar (In Aktionen "AVATAR") und verwende ihn um mit der Welt oder Spielern zu interargieren.

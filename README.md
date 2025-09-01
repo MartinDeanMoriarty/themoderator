@@ -1,18 +1,15 @@
 # themoderator
 
 The only moderator you can trust ;)
-
+<br><br>
 LLM moderator fabric mod for Minecraft 1.21.4 
-
-Dependencies:
-<br>-fabric-api-0.119.4+1.21.4
-<br>-Ollama
  
 ## Table of Contents
 - [Warning](#warning)
+- [Dependencies](#dependencies)
 - [Features](#features)
 - [Download](#download)
-- [Installation](#installation)
+- [Installation](#installation) 
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -21,19 +18,38 @@ Use it at your own risk!
 <br>In theory the llm can not do any real harm since it is not able to use server commands or write code.
 <br>But our future oppressors may prove me wrong, so please be careful.
 
+## Dependencies
+<a href="https://www.minecraft.net/">Minecraft version = 1.21.4</a>
+<br><a href="https://fabricmc.net/">Fabric version = 0.119.4+1.21.4</a>
+<br>Loader version = 0.17.2 
+<br><a href="https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/6863303">fabric-api-0.119.4+1.21.4</a>
+<br><a href="https://ollama.com/">Ollama</a>
+
 ## Features
 By forcing the llm to respond with strict json, it is able to use a so called <b><ACTION</b><b>></b> like this:
 <br>{"action": "<b><ACTION</b><b>></b>", "value": "<b><VALUE</b><b>></b>", "value2": "<b><VALUE2</b><b>></b>", "value3": "<b><VALUE3</b><b>></b>"}.
 <br>The json gets parsed to extract the <b><ACTION</b><b>></b> and its values.
-A simple use case looks like this: <br>{"action": "CHAT", "value": "<b><Text</b><b>></b>"}.
+A simple use case can look like this: <br>{"action": "CHAT", "value": "<b><Text</b><b>></b>"}.
 <br>This way the llm can interact with the server and the players efficient and safe.
 <br><b><ACTION</b><b>></b> the llm can do for now:
 <br>"src/main/java/com.nomoneypirate/llm/ModerationDecision.java"
+<br><br>
+The System is based on trigger words and a scheduling task.
+<br>Trigger words are used to send player messages directly to 
+the llm which involves a cooldown. 
+<br>The scheduling task caches a summary of server messages to send to the llm periodically.  
+<br><br>
+The moderator aka llm is able to spawn an Avatar.
+<br>This is just a vanilla mob and not a custom entity! 
+<br>The Avatar has limited abilities to "interact" with the server, worlds and players as well.  
 
 ## Download
-For now, I do not feel like it is a thing and at this point it should not run on public servers!
-<br>However, as soon as important and necessary <b><ACTIONS</b><b>></b> are added and there is actually something to show, there will be (probably) a release.
-<b>If you are really into software development or just testing every Git repo there is, well, just follow Installation. 
+For now, it should NOT run on public servers!
+<br>It is in development and unstable! 
+<br><br>However, you can download a compiled and !UNTESTET! version here:
+<br><a href="https://drive.google.com/file/d/13R8WikinquK_M0yg64NlT4yN8_BodHKW/view">latest build</a>
+<br>This version may be different from development version and not up to date!
+<br><br>If you are really into software development or just testing every Git repo there is, well, just follow Installation.
 
 ## Installation
 1. Set up development environment:
@@ -43,7 +59,7 @@ For now, I do not feel like it is a thing and at this point it should not run on
       <br>For example: "gemma3:latest"
 4. You can Run the project in ide. 
 5. Or build the project with Gradle.
-6. Make sure Ollama ist installed on your system!
+6. Make sure Ollama ist installed on your system! 
 
 ## Contributing
 Contributions are welcome! If you think something is missing, incorrect, or could be improved upon, please feel free to open an issue or submit a pull request.
