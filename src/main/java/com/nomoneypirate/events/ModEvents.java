@@ -8,6 +8,7 @@ import com.nomoneypirate.actions.ModActions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
+import com.nomoneypirate.llm.ModerationScheduler;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -19,7 +20,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
@@ -49,28 +49,40 @@ public class ModEvents {
             });
         });
 
+        ServerMessageEvents.GAME_MESSAGE.register((server, text, params) -> {
+            String content = text.toString();
+            // Add to scheduler
+            ModerationScheduler.addMessage("Game", content);
+        });
+
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+
             MinecraftServer server = sender.getServer();
             if (server == null) return;
             // Get player name and chat content
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
 
-            // Asynchronous to the LLM
-            LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {
-                // Back to the server thread to apply the decision
-                server.execute(() -> applyDecision(server, decision));
-            }).exceptionally(ex -> {
-                // In case of errors: do not block anything, at most log
-                LOGGER.error("LLM error: {}", ex.getMessage());
-                return null;
-            });
+            // Add to scheduler
+            ModerationScheduler.addMessage("Spieler", playerName + ": " + content);
+
+            // Check for a keyword to trigger a message to the llm
+            if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
+                // Asynchronous to the llm
+                LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {
+                    // Back to the server thread to apply the decision
+                    server.execute(() -> applyDecision(server, decision));
+                }).exceptionally(ex -> {
+                    // In case of errors: do not block anything, at most log
+                    LOGGER.error("LLM error: {}", ex.getMessage());
+                    return null;
+                });
+            }
+
         });
 
-
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-
             ServerWorld world = findModeratorWorld(server);
             if (checked && currentAvatarId != null) {
                 // Pull a chunk loader along with the Avatar if there is an Avatar
@@ -81,15 +93,34 @@ public class ModEvents {
                     }
                 }
                 // Let's check once for a lingering mob at server start
-            } else {
+                // We can also let the llm know when the server (re)started
+            } else if (!checked) {
                 if (world != null) {
-                    // If an old Mob was found, lets reuse it
-                    if (searchModeratorAvatar(world)) {
-                        String feedback = currentModeratorAvatar();
-                        LOGGER.info(feedback);
-                        //LlmClient.sendFeedbackAsync(feedback)
-                        //        .thenAccept(dec -> applyDecision(server, dec));
 
+                    StringBuilder feedback = new StringBuilder();
+                    // Dedicated Server
+                    if (server.isDedicated()) {
+                        feedback.append("Status: Dedicated Server - ").append(ConfigLoader.lang.feedback_17);
+                        System.out.println("themoderator -is Dedicated.");
+                    }
+                    else
+                    {// Integrated Server
+                        System.out.println("themoderator -is Integrated.");
+                            // Let's maybe NOT use a feedback when it is an integrated server
+                            // because the player joining is like starting the server
+                            // feedback.append("Status: Integrated Server - ").append(ConfigLoader.lang.feedback_17);
+                    }
+                    // Search for lingering mob
+                    if (searchModeratorAvatar(world)) {
+                        System.out.println("themoderator -Found Avatar.");
+                        feedback.append(" Avatar: ").append(currentModeratorAvatar());
+                    }
+                    // Only send if there is a feedback
+                    if (!feedback.isEmpty()) {
+                        System.out.println("themoderator -Sending Feedback.");
+                        LOGGER.info(feedback.toString());
+                        LlmClient.sendFeedbackAsync(feedback.toString())
+                                .thenAccept(dec -> applyDecision(server, dec));
                     }
                 }
                 checked = true;

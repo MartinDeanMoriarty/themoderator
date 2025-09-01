@@ -11,15 +11,15 @@ public record ModerationDecision(Action action, String value, String value2, Str
         WHEREIS,
         FEEDBACK,
         PLAYERLIST,
+        TELEPORTPLAYER,
+        TELEPORTPOSITION,
         SPAWNAVATAR,
         DESPAWNAVATAR,
-        STOP,
         FOLLOWPLAYER,
         LOOKATPLAYER,
         GOTOPLAYER,
         GOTOPOSITION,
         MOVEAROUND,
-        TELEPORTPLAYER,
-        TELEPORTPOSITION
+        STOP
     }
 }

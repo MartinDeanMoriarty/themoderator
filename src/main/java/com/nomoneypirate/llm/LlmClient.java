@@ -139,16 +139,16 @@ public final class LlmClient {
                 case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
+                case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORTPLAYER;
+                case "TELEPORTPOSITION" -> ModerationDecision.Action.TELEPORTPOSITION;
                 case "SPAWNAVATAR" -> ModerationDecision.Action.SPAWNAVATAR;
                 case "DESPAWNAVATAR" -> ModerationDecision.Action.DESPAWNAVATAR;
-                case "STOP" -> ModerationDecision.Action.STOP;
                 case "FOLLOWPLAYER" -> ModerationDecision.Action.FOLLOWPLAYER;
                 case "LOOKATPLAYER" -> ModerationDecision.Action.LOOKATPLAYER;
                 case "GOTOPLAYER" -> ModerationDecision.Action.GOTOPLAYER;
                 case "GOTOPOSITION" -> ModerationDecision.Action.GOTOPOSITION;
                 case "MOVEAROUND" -> ModerationDecision.Action.MOVEAROUND;
-                case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORTPLAYER;
-                case "TELEPORTPOSITION" -> ModerationDecision.Action.TELEPORTPOSITION;
+                case "STOP" -> ModerationDecision.Action.STOP;
                 default -> ModerationDecision.Action.IGNORE;
             };
             return new ModerationDecision(action, value, value2, value3);
@@ -170,7 +170,7 @@ public final class LlmClient {
         return "{}";
     }
 
-    private static void logToFile(String filename, String content) {
+    public static void logToFile(String filename, String content) {
         Path logDir = FabricLoader.getInstance().getGameDir().resolve("logs");
         Path logFile = logDir.resolve(filename);
         try {

@@ -23,7 +23,7 @@ Use it at your own risk!
 
 ## Features
 By forcing the llm to respond with strict json, it is able to use a so called <b><ACTION</b><b>></b> like this:
-<br>{"action": "<b><ACTION</b><b>></b>", "value": "<b><VALUE</b><b>></b>", "value2": "<b><VALUE2</b><b>></b>"}.
+<br>{"action": "<b><ACTION</b><b>></b>", "value": "<b><VALUE</b><b>></b>", "value2": "<b><VALUE2</b><b>></b>", "value3": "<b><VALUE3</b><b>></b>"}.
 <br>The json gets parsed to extract the <b><ACTION</b><b>></b> and its values.
 A simple use case looks like this: <br>{"action": "CHAT", "value": "<b><Text</b><b>></b>"}.
 <br>This way the llm can interact with the server and the players efficient and safe.
@@ -31,9 +31,9 @@ A simple use case looks like this: <br>{"action": "CHAT", "value": "<b><Text</b>
 <br>"src/main/java/com.nomoneypirate/llm/ModerationDecision.java"
 
 ## Download
-For now, I do not feel like it is a thing and at this point it should not be used on public servers!
+For now, I do not feel like it is a thing and at this point it should not run on public servers!
 <br>However, as soon as important and necessary <b><ACTIONS</b><b>></b> are added and there is actually something to show, there will be (probably) a release.
-<b>If you are really into development or just testing every Git repo there is, well, just follow Installation. 
+<b>If you are really into software development or just testing every Git repo there is, well, just follow Installation. 
 
 ## Installation
 1. Set up development environment:

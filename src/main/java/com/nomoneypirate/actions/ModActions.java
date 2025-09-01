@@ -16,7 +16,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
-
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;

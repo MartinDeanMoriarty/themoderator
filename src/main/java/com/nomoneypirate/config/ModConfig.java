@@ -1,5 +1,7 @@
 package com.nomoneypirate.config;
 
+import java.util.Set;
+
 public class ModConfig {
     // The name of the language file
     public String languageFileName = "themoderator_de.json";
@@ -10,6 +12,10 @@ public class ModConfig {
     // Server without a whitelist should use this!
     // But it is possible to use both.
     public Boolean useBanlist = false;
+    // Moderation schedule interval in minutes
+    public Integer scheduleInterval = 10;
+    // Activation keywords
+    public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // How much timeout in seconds
