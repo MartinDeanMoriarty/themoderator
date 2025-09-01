@@ -35,9 +35,9 @@ public class ModEvents {
     private static final int TICKS_PER_MINUTE = 20 * 60;
     private static final int INTERVAL_MINUTES = ConfigLoader.config.scheduleInterval;
     public static final int INTERVAL_TICKS = TICKS_PER_MINUTE * INTERVAL_MINUTES;
-    // Cooldown
+    // Cooldown for chat messages
     private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
-    private static final long COOLDOWN_MILLIS = 5_000; // 5_000 = 5 Seconds
+    private static final long COOLDOWN_MILLIS = 1_000; // 1_000 = 1 Seconds
 
 
     public static void registerEvents() {
