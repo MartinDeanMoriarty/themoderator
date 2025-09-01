@@ -7,16 +7,14 @@ import java.util.concurrent.*;
 import com.nomoneypirate.config.ConfigLoader;
 
 import static com.nomoneypirate.events.ModEvents.applyDecision;
-import static com.nomoneypirate.llm.LlmClient.logToFile;
+
 import com.google.gson.*;
 import net.minecraft.server.MinecraftServer;
-import org.apache.logging.log4j.core.jmx.Server;
 
 public class ModerationScheduler {
 
     private static final List<String> messageBuffer = new ArrayList<>();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final Gson GSON = new GsonBuilder().create();
 
     public static void runScheduledTask(MinecraftServer server) {
         System.out.println("themoderator - Schedule started.");
@@ -31,14 +29,8 @@ public class ModerationScheduler {
         String keyWords = ConfigLoader.config.activationKeywords.toString();
         if (summary.isEmpty()) summary = ConfigLoader.lang.feedback_38.formatted(keyWords);
 
-        String feedback = "Summary: " + summary;
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME);
-        if (ConfigLoader.config.scheduleLogging) {
-            String filename = ConfigLoader.config.scheduleLogFilename + "_" + timestamp + ".log";
-            logToFile(filename, "Schedule:\n" + feedback);
-        }
-        // Send feedback to llm
-         LlmClient.sendFeedbackAsync(feedback)
+        // Send summary to llm
+        LlmClient.sendSummaryAsync(summary)
                 .thenAccept(dec -> applyDecision(server, dec));
 
         // For now, we just clear messages.

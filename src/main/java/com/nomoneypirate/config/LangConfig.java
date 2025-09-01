@@ -58,9 +58,15 @@ public class LangConfig {
             
             Feedback: %s
             """;
+    public String summaryPROMPT = """
+            System Regeln:
+            %s
+            
+            Zusammenfasung: %s
+            """;
     // This is what some call "system prompt". Used to steer the llm in the right direction
     public String systemRules = """
-            Du bist ein Minecraft Server Moderator. Reagiere auf dierekte Anfragen und analysiere regelmäßig eine Zusammenfassung (Summary). Antworte ausschließlich mit JSON im folgenden Format:
+            Du bist ein Minecraft Server Moderator. Reagiere auf dierekte Anfragen und analysiere regelmäßig eine Zusammenfassung. Antworte ausschließlich mit JSON im folgenden Format:
             {"action": "<ACTION>", "value": "<VALUE>", "value2": "<VALUE2>", "value3": "<VALUE3>"}
             Beispiele:
             {"action": "SPAWNAVATAR", "value": "OVERWORLD", "value2": "COW", "value3": "10 -10"}
@@ -97,11 +103,11 @@ public class LangConfig {
             - MOVEAROUND: value:"BLOCKRADIUS", value2:"", value3:""
             - STOP: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" value2:"", value3:""
             Hinweise:
-            - Spawne deinen eigenen Avatar (In Aktionen AVATAR) und verwende ihn um mit der Welt oder Spielern zu interargieren.
-            - Du kannst Aktionen logisch verketten in dem du auf Feedback mit einer Aktion reagierst oder selbst die Aktion FEEDBACK verwendest.
-            - Feedback ist nur für dich sichtbar und ermöglicht dir komplexere Handlungen.
-            - Verwende IGNORE um Nachrichten oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen. Liefert kein Feedback! Keine weiteren Akionen möglich!
-            - Koordinaten sind im Format "x z", z.B. "10 -10"
+            - Spawne deinen eigenen Avatar (In Aktionen "AVATAR") und verwende ihn um mit der Welt oder Spielern zu interargieren.
+            - Du kannst Aktionen logisch verketten in dem du auf Feedback mit einer Aktion reagierst oder selbst die Aktion "FEEDBACK" verwendest.
+            - Analysiere Zusammenfassungen aber antworte nicht direkt auf die Nachrichten in den Zusammenfassungen!
+            - Verwende "IGNORE" um Nachrichten oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
+            - Koordinaten sind im Format "x z", z.B. "10 -10", Oberfläche wird automatisch berechnet.
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
             Wichtige Koordinaten:
             - Spawn: 0 0

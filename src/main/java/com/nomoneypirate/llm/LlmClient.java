@@ -30,6 +30,7 @@ public final class LlmClient {
     private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
     private static final String FEEDBACK_PROMPT = ConfigLoader.lang.feedbackPROMPT;
+    private static final String SUMMARY_PROMPT = ConfigLoader.lang.summaryPROMPT;
 
     // To LLM
     // Moderation
@@ -94,6 +95,44 @@ public final class LlmClient {
         String jsonBody = GSON.toJson(body);
         String filename = ConfigLoader.config.llmLogFilename+".log";
         if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
+
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(resp -> {
+                    if (resp.statusCode() / 100 != 2) {
+                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
+                    }
+                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
+                    String responseText = json.get("response").getAsString().trim();
+                    // Output logging
+
+                    if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Feedback Response:\n" + responseText);
+                    return parseDecision(responseText);
+                });
+    }
+
+    // Summary to LLM
+    public static CompletableFuture<ModerationDecision> sendSummaryAsync(String feedback) {
+        String prompt = SUMMARY_PROMPT.formatted(SYSTEM_RULES, feedback);
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+        JsonObject body = new JsonObject();
+        body.addProperty("model", MODEL);
+        body.addProperty("prompt", prompt);
+        body.addProperty("stream", false);
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(OLLAMA_URI)
+                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+                .build();
+
+        // Input logging
+        String jsonBody = GSON.toJson(body);
+        String logtimestamp = LocalDateTime.now().toString();
+        String filename = ConfigLoader.config.scheduleLogFilename + logtimestamp + ".log";
+        if (ConfigLoader.config.scheduleLogging) logToFile(filename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
 
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
