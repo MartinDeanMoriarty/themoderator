@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.Item;
 import net.minecraft.server.BannedPlayerEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
@@ -64,12 +65,10 @@ public class ModEvents {
                     // feedback.append(ConfigLoader.lang.feedback_17);
                     // Search for lingering mob
                     if (searchModeratorAvatar(world)) {
-                        System.out.println("themoderator -Found Avatar.");
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
                     }
                     // Only send if there is a feedback
                      if (!feedback.isEmpty()) {
-                     System.out.println("themoderator -Sending Feedback:" + feedback);
                     LOGGER.info(feedback.toString());
                      LlmClient.sendFeedbackAsync(feedback.toString())
                             .thenAccept(dec -> applyDecision(server, dec));
@@ -343,6 +342,72 @@ public class ModEvents {
                 // Feedback
                 LlmClient.sendFeedbackAsync(feedback)
                         .thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case DAMAGEPLAYER -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.damagePlayer(world, decision.value(), Integer.parseInt(decision.value2()));
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
+            }
+
+            case CLEARINVENTORY -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.clearInventory(world, decision.value());
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
+            }
+
+            case KILLPLAYER -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.killPlayer(world, decision.value());
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
+            }
+
+            case GIVEPLAYER -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.givePlayer(world, decision.value(), Item.byRawId(Integer.parseInt(decision.value2())), Integer.parseInt(decision.value3()));
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
+            }
+
+            case CHANGEWEATHER -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.changeWeather(world, decision.value());
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
+            }
+
+            case CHANGETIME -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.changeTime(world, decision.value());
+                    // Feedback
+                    LlmClient.sendFeedbackAsync(feedback)
+                            .thenAccept(dec -> applyDecision(server, dec));
+                }
             }
 
             case WHISPER, WARN, KICK, BAN, FOLLOWPLAYER, LOOKATPLAYER, GOTOPLAYER, MOVEAROUND -> {

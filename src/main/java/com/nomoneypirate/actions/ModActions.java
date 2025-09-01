@@ -9,6 +9,8 @@ import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.ai.goal.PrioritizedGoal;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -69,6 +71,87 @@ public class ModActions {
         return ConfigLoader.lang.feedback_33.formatted(playerName);
     }
 
+    public static String clearInventory(ServerWorld world, String playerName) {
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
+
+        // Clear inventory but not Armor and off-hand
+        player.getInventory().main.replaceAll(ignored -> ItemStack.EMPTY);
+
+        return ConfigLoader.lang.feedback_39.formatted(playerName);
+    }
+
+    public static String damagePlayer(ServerWorld world, String playerName, int amount) {
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
+        player.damage(world, world.getDamageSources().generic(), amount);
+        return ConfigLoader.lang.feedback_40.formatted(playerName);
+    }
+
+    public static String killPlayer(ServerWorld world, String playerName) {
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
+        player.kill(world);
+        return ConfigLoader.lang.feedback_40.formatted(playerName);
+    }
+
+    public static String givePlayer(ServerWorld world, String playerName, Item item, int amount) {
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
+
+        // Create ItemStack with Item
+        ItemStack stack = new ItemStack(item, amount); // How many items
+        // Try to put in inventory
+        boolean success = player.getInventory().insertStack(stack);
+
+        // If inventory is full, drop in front of player
+        if (!success) {
+            player.dropItem(stack, false);
+        }
+        return ConfigLoader.lang.feedback_41.formatted(playerName, item.getName().getString());
+    }
+
+    public static String changeWeather(ServerWorld world, String weather) {
+        switch (weather.toLowerCase()) {
+            case "clear":
+                world.setWeather(12000, 0, false, false); // 10 Minuten Sonne
+                break;
+            case "rain":
+                world.setWeather(0, 12000, false,false); // 10 Minuten Regen
+                break;
+            case "thunder":
+                world.setWeather(0, 12000, true, true); // 10 Minuten Gewitter
+                break;
+            default:
+            return ConfigLoader.lang.feedback_02;
+        }
+
+        return ConfigLoader.lang.feedback_42.formatted(weather);
+    }
+
+    public static String changeTime(ServerWorld world, String time) {
+        switch (time.toLowerCase()) {
+            case "day":
+                world.setTimeOfDay(1000); // Morgen
+                break;
+            case "noon":
+                world.setTimeOfDay(6000); // Mittag
+                break;
+            case "evening":
+                world.setTimeOfDay(12000); // Sonnenuntergang
+                break;
+            case "night":
+                world.setTimeOfDay(13000); // Nacht
+                break;
+            case "midnight":
+                world.setTimeOfDay(18000); // Mitternacht
+                break;
+            default:
+                return ConfigLoader.lang.feedback_02;
+        }
+
+        return ConfigLoader.lang.feedback_43.formatted(time);
+    }
 
     public static String teleportAvatar(ServerWorld world, UUID mobId, String playerName) {
         Entity entity = world.getEntity(mobId);

@@ -191,6 +191,12 @@ public final class LlmClient {
                 case "GOTOPLAYER" -> ModerationDecision.Action.GOTOPLAYER;
                 case "GOTOPOSITION" -> ModerationDecision.Action.GOTOPOSITION;
                 case "MOVEAROUND" -> ModerationDecision.Action.MOVEAROUND;
+                case "DAMAGEPLAYER" -> ModerationDecision.Action.DAMAGEPLAYER;
+                case "CLEARINVENTORY" -> ModerationDecision.Action.CLEARINVENTORY;
+                case "KILLPLAYER" -> ModerationDecision.Action.KILLPLAYER;
+                case "GIVEPLAYER" -> ModerationDecision.Action.GIVEPLAYER;
+                case "CHANGEWEATHER" -> ModerationDecision.Action.CHANGEWEATHER;
+                case "CHANGETIME" -> ModerationDecision.Action.CHANGETIME;
                 case "STOP" -> ModerationDecision.Action.STOP;
                 default -> ModerationDecision.Action.IGNORE;
             };

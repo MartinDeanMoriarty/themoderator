@@ -20,6 +20,12 @@ public record ModerationDecision(Action action, String value, String value2, Str
         GOTOPLAYER,
         GOTOPOSITION,
         MOVEAROUND,
+        DAMAGEPLAYER,
+        CLEARINVENTORY,
+        KILLPLAYER,
+        GIVEPLAYER,
+        CHANGEWEATHER,
+        CHANGETIME,
         STOP
     }
 }

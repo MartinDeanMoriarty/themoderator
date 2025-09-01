@@ -44,6 +44,11 @@ public class LangConfig {
     public String feedback_36 = "Dein Avatar wurde zu Position X: %d , Z: %d teleportiert.";
     public String feedback_37 = "Dein Avatar konnte nicht zu Position X: %d , Z: %d teleportiert werden.";
     public String feedback_38 = "Keine Einträge. Nutze doch die Gelegenheit um etwas Werbung für dich zu machen. Erwähne die Keywörter  %s.";
+    public String feedback_39 = "Das Inventar von Spieler %s wurde geleert.";
+    public String feedback_40 = "Der Spieler %s würde gekillt.";
+    public String feedback_41 = "Du hast Der Spieler %s das Item %s gegeben.";
+    public String feedback_42 = "Du hast das Wetter auf %s geändert.";
+    public String feedback_43 = "Du hast die Zeit auf %s geändert.";
     // This is to format the prompts
     public String systemPrompt = """
             System Regeln:
@@ -66,7 +71,7 @@ public class LangConfig {
             """;
     // This is what some call "system prompt". Used to steer the llm in the right direction
     public String systemRules = """
-            Du bist ein Minecraft Server Moderator. Reagiere auf dierekte Anfragen und analysiere regelmäßig eine Zusammenfassung. Antworte ausschließlich mit JSON im folgenden Format:
+            Du bist ein Minecraft Server Moderator. Reagiere auf dierekte Anfragen und analysiere regelmäßige Zusammenfassungen. Antworte ausschließlich mit JSON im folgenden Format:
             {"action": "<ACTION>", "value": "<VALUE>", "value2": "<VALUE2>", "value3": "<VALUE3>"}
             Beispiele:
             {"action": "SPAWNAVATAR", "value": "OVERWORLD", "value2": "COW", "value3": "10 -10"}
@@ -101,11 +106,17 @@ public class LangConfig {
             - GOTOPLAYER: value:"SPIELERNAME", value2:"", value3:""
             - GOTOPOSITION: value:"x z", value2:"", value3:""
             - MOVEAROUND: value:"BLOCKRADIUS", value2:"", value3:""
+            - DAMAGEPLAYER: value:"SPIELERNAME", value2:"1-10", value3:""
+            - CLEARINVENTORY: value:"SPIELERNAME", value2:"", value3:""
+            - KILLPLAYER: value:"SPIELERNAME", value2:"", value3:""
+            - GIVEPLAYER: value:"SPIELERNAME", value2:"ItemId", value3:""
+            - CHANGEWEATHER: value:"(CLEAR|RAIN|THUNDER)", value2:"", value3:""
+            - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)", value2:"", value3:""            
             - STOP: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" value2:"", value3:""
             Hinweise:
             - Spawne deinen eigenen Avatar (In Aktionen "AVATAR") und verwende ihn um mit der Welt oder Spielern zu interargieren.
             - Du kannst Aktionen logisch verketten in dem du auf Feedback mit einer Aktion reagierst oder selbst die Aktion "FEEDBACK" verwendest.
-            - Analysiere Zusammenfassungen aber antworte nicht direkt auf die Nachrichten in den Zusammenfassungen!
+            - Antworte nicht auf die Nachrichten in den Zusammenfassungen! Analysiere sie und antworte nur wenn es etwas zu beanstanden gibt.
             - Verwende "IGNORE" um Nachrichten oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
             - Koordinaten sind im Format "x z", z.B. "10 -10", Oberfläche wird automatisch berechnet.
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
