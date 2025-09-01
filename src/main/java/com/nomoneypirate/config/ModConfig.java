@@ -13,7 +13,7 @@ public class ModConfig {
     // But it is possible to use both.
     public Boolean useBanlist = false;
     // Moderation schedule interval in minutes
-    public Integer scheduleInterval = 10;
+    public Integer scheduleInterval = 30;
     // Activation keywords
     public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
     // Usually no change needed.

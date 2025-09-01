@@ -23,7 +23,9 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class ModEvents {
@@ -33,6 +35,10 @@ public class ModEvents {
     private static final int TICKS_PER_MINUTE = 20 * 60;
     private static final int INTERVAL_MINUTES = ConfigLoader.config.scheduleInterval;
     public static final int INTERVAL_TICKS = TICKS_PER_MINUTE * INTERVAL_MINUTES;
+    // Cooldown
+    private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
+    private static final long COOLDOWN_MILLIS = 5_000; // 5_000 = 5 Seconds
+
 
     public static void registerEvents() {
 
@@ -107,27 +113,36 @@ public class ModEvents {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             MinecraftServer server = sender.getServer();
             if (server == null) return;
-            // Get player name and chat content
+
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
 
-            // Add to scheduler
             ModerationScheduler.addMessage("Spieler", playerName + ": " + content);
 
-            // Check for a keyword to trigger a message to the llm
+            // Keyword-Check
             if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
-                // Asynchronous to the llm
+                long now = System.currentTimeMillis();
+                long last = cooldowns.getOrDefault(playerName, 0L);
+
+                // Cooldown
+                if (now - last < COOLDOWN_MILLIS) {
+                    LOGGER.info("Cooldown aktiv für {} – Anfrage ignoriert", playerName);
+                    return;
+                }
+
+                // Cooldown
+                cooldowns.put(playerName, now);
+
+                // Async-Request
                 LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {
-                    // Back to the server thread to apply the decision
                     server.execute(() -> applyDecision(server, decision));
                 }).exceptionally(ex -> {
-                    // In case of errors: do not block anything, at most log
                     LOGGER.error("LLM error: {}", ex.getMessage());
                     return null;
                 });
             }
-
         });
+
 
     }
 
