@@ -34,7 +34,8 @@ public class ModerationScheduler {
         String feedback = "Summary: " + summary;
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME);
         if (ConfigLoader.config.scheduleLogging) {
-            logToFile(ConfigLoader.config.scheduleLogFilename.formatted(timestamp), "Schedule:\n" + feedback);
+            String filename = ConfigLoader.config.scheduleLogFilename + "_" + timestamp + ".log";
+            logToFile(filename, "Schedule:\n" + feedback);
         }
         // Send feedback to llm
          LlmClient.sendFeedbackAsync(feedback)

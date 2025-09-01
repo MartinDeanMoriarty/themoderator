@@ -32,7 +32,7 @@ public class ConfigLoader {
     public static void loadLang() {
         // Using default fabric config directory
         // Load lang file
-        Path langPath = FabricLoader.getInstance().getConfigDir().resolve(ConfigLoader.config.languageFileName);
+        Path langPath = FabricLoader.getInstance().getConfigDir().resolve(ConfigLoader.config.languageFileName + ".json");
         try {
             if (!Files.exists(langPath)) {
                 lang = new LangConfig(); // Defaults
