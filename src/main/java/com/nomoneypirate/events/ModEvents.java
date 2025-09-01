@@ -68,12 +68,12 @@ public class ModEvents {
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
                     }
                     // Only send if there is a feedback
-                    // if (!feedback.isEmpty()) {
+                     if (!feedback.isEmpty()) {
                      System.out.println("themoderator -Sending Feedback:" + feedback);
-                    //LOGGER.info(feedback.toString());
-                    // LlmClient.sendFeedbackAsync(feedback.toString())
-                    //        .thenAccept(dec -> applyDecision(server, dec));
-                    //}
+                    LOGGER.info(feedback.toString());
+                     LlmClient.sendFeedbackAsync(feedback.toString())
+                            .thenAccept(dec -> applyDecision(server, dec));
+                    }
                     checked = true;
                 }
 
