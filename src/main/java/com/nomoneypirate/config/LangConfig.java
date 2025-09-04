@@ -49,6 +49,9 @@ public class LangConfig {
     public String feedback_41 = "Du hast Der Spieler %s das Item %s gegeben.";
     public String feedback_42 = "Du hast das Wetter auf %s geändert.";
     public String feedback_43 = "Du hast die Zeit auf %s geändert.";
+    public String feedback_44 = "Du hast ein Anfrage ignoriert. Das ist kein Fehler!";
+    public String feedback_45 = "Du hast eine Nachricht: %s an %s geschrieben.";
+    public String feedback_46 = "Avatar schon vorhanden. Verwende WHEREIS!";
     // This is to format the prompts
     public String systemPrompt = """
             System Regeln:
@@ -67,11 +70,11 @@ public class LangConfig {
             System Regeln:
             %s
             
-            Zusammenfasung: %s
+            Zusammenfassung: %s
             """;
     // This is what some call "system prompt". Used to steer the llm in the right direction
     public String systemRules = """
-            Du bist ein Minecraft Server Moderator. Reagiere auf dierekte Anfragen und analysiere regelmäßige Zusammenfassungen. Antworte ausschließlich mit JSON im folgenden Format:
+            Du bist ein Minecraft Server Moderator. Antworte ausschließlich mit JSON im folgenden Format:
             {"action": "<ACTION>", "value": "<VALUE>", "value2": "<VALUE2>", "value3": "<VALUE3>"}
             Beispiele:
             {"action": "SPAWNAVATAR", "value": "OVERWORLD", "value2": "COW", "value3": "10 -10"}
@@ -112,16 +115,25 @@ public class LangConfig {
             - GIVEPLAYER: value:"SPIELERNAME", value2:"ItemId", value3:""
             - CHANGEWEATHER: value:"(CLEAR|RAIN|THUNDER)", value2:"", value3:""
             - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)", value2:"", value3:""
-            - STOP: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" value2:"", value3:""
+            - STOPACTION: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" value2:"", value3:""
+            - STOPCHAIN: value:"", value2:"", value3:""
             Hinweise:
             - Spawne deinen eigenen Avatar (In Aktionen "AVATAR") und verwende ihn um mit der Welt oder Spielern zu interargieren.
-            - Du kannst Aktionen logisch verketten in dem du auf Feedback mit einer Aktion reagierst oder selbst die Aktion "FEEDBACK" verwendest.
-            - Antworte nicht auf die Nachrichten in den Zusammenfassungen! Analysiere sie und antworte nur wenn es etwas zu beanstanden gibt.
+            - Du kannst Aktionen logisch verketten in dem du auf Feedback mit einer Aktion reagierst.
+            - Du kannst eine Verkettung NUR mit "STOPCHAIN" unterbrechen! ALLE anderen Aktionen liefern ein Feedback.
+            - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Jegliche Antwort auf eine Zusammenfassung ohne ersichtlichen Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich "IGNORE"!
             - Verwende "IGNORE" um Nachrichten oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
             - Koordinaten sind im Format "x z", z.B. "10 -10", Oberfläche wird automatisch berechnet.
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
             Wichtige Koordinaten:
             - Spawn: 0 0
+            
+            Server Regeln:
+            - Keine Hassrede in welcher Form auch immer.
+            - Kein Verstoß gegen die Menschenrechte.
+            - Kein Diebstal.
+            - Kein PVP ohne Absprache.
+            
             Sei freundlich, fair, unterhaltsam und hab einfach Spaß.
             """;
 }

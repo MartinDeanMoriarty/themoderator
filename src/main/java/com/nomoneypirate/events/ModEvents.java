@@ -30,19 +30,21 @@ import java.util.stream.Collectors;
 
 public class ModEvents {
 
+    // For world ready event
     static boolean checked = false;
+    // Scheduler interval
     private static int tickCounter = 0;
     private static final int TICKS_PER_MINUTE = 20 * 60;
     private static final int INTERVAL_MINUTES = ConfigLoader.config.scheduleInterval;
     public static final int INTERVAL_TICKS = TICKS_PER_MINUTE * INTERVAL_MINUTES;
     // Cooldown for chat messages
     private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
-    private static final long COOLDOWN_MILLIS = 1_000; // 1_000 = 1 Seconds
+    private static final long COOLDOWN_MILLIS = ConfigLoader.config.requestCooldown * 1_000; // * 1000 = milliseconds
 
 
     public static void registerEvents() {
 
-        // "Update-Loop" and World-Ready event
+        // "Update-Loop" and world ready event
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             // Scheduler
             tickCounter++;
@@ -60,28 +62,26 @@ public class ModEvents {
                         updateChunkAnchor(world, moderator);
                     }
                 }
-
             }
-            // World-Ready event
+            // World ready event.
             // Let's check once for a lingering mob at server start
             // We can also let the llm know when the server (re)started
             else if (!checked) {
                 if (world != null) {
                     StringBuilder feedback = new StringBuilder();
-                    // feedback.append(ConfigLoader.lang.feedback_17);
+                    // Server (re)start message.
+                    feedback.append(ConfigLoader.lang.feedback_17);
                     // Search for lingering mob
                     if (searchModeratorAvatar(world)) {
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
                     }
                     // Only send if there is a feedback
                      if (!feedback.isEmpty()) {
-                    LOGGER.info(feedback.toString());
-                     LlmClient.sendFeedbackAsync(feedback.toString())
-                            .thenAccept(dec -> applyDecision(server, dec));
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback.toString(), null).thenAccept(dec -> applyDecision(server, dec));
+                        //LlmClient.sendFeedbackAsync(feedback.toString()).thenAccept(dec -> applyDecision(server, dec));
                     }
                     checked = true;
                 }
-
             }
         });
 
@@ -93,19 +93,21 @@ public class ModEvents {
 
             String welcomeText = ConfigLoader.lang.welcomeText;
             // Asynchronous to the LLM
-            LlmClient.moderateAsync(playerName, welcomeText).thenAccept(decision -> {
+            LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, playerName, welcomeText).thenAccept(decision -> {
+            //LlmClient.moderateAsync(playerName, welcomeText).thenAccept(decision -> {
                 // Back to the server thread
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
                 // In case of errors: do not block anything, at most log
-                LOGGER.error("Welcoming failed: {}", ex.getMessage());
+                if (ConfigLoader.config.modLogging) LOGGER.error("Welcoming failed: {}", ex.getMessage());
                 return null;
             });
         });
 
+        // Intercept game messages to collect for the llm
         ServerMessageEvents.GAME_MESSAGE.register((server, text, params) -> {
-            String content = text.toString();
-            // Add to scheduler
+            String content = text.getString();
+            // Add to messageBuffer
             ModerationScheduler.addMessage("Game", content);
         });
 
@@ -116,7 +118,7 @@ public class ModEvents {
 
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
-
+            // Add to messageBuffer
             ModerationScheduler.addMessage("Spieler", playerName + ": " + content);
 
             // Keyword-Check
@@ -126,7 +128,7 @@ public class ModEvents {
 
                 // Cooldown
                 if (now - last < COOLDOWN_MILLIS) {
-                    LOGGER.info("Cooldown aktiv für {} – Anfrage ignoriert", playerName);
+                    if (ConfigLoader.config.modLogging) LOGGER.info("Cooldown! {} – request ignored.", playerName);
                     return;
                 }
 
@@ -134,15 +136,15 @@ public class ModEvents {
                 cooldowns.put(playerName, now);
 
                 // Async-Request
-                LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {
+                LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, playerName, content).thenAccept(decision -> {
+                //LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {
                     server.execute(() -> applyDecision(server, decision));
                 }).exceptionally(ex -> {
-                    LOGGER.error("LLM error: {}", ex.getMessage());
+                    if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
                     return null;
                 });
             }
         });
-
 
     }
 
@@ -150,7 +152,14 @@ public class ModEvents {
     public static void applyDecision(MinecraftServer server, ModerationDecision decision) {
         switch (decision.action()) {
 
-            case STOP -> {
+            case IGNORE -> {
+                // Feedback
+                String feedback = ConfigLoader.lang.feedback_44;
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                //LlmClient.sendFeedbackAsync(feedback).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case STOPACTION -> {
                 String feedback = "";
                 switch (decision.value()) {
                     case "ALL" -> {
@@ -185,13 +194,15 @@ public class ModEvents {
                     }
                 }
                 // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                //LlmClient.sendFeedbackAsync(feedback).thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case CHAT -> server.getPlayerManager().broadcast(
-                    Text.literal("The Moderator: " + decision.value()),false
-            );
+            case CHAT -> {
+                server.getPlayerManager().broadcast(Text.literal("The Moderator: " + decision.value()), false);
+                String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value(), "Chat");
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+            }
 
             case PLAYERLIST -> {
                 Collection<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
@@ -200,8 +211,8 @@ public class ModEvents {
                         .collect(Collectors.joining(", "));
                 // Feedback
                 String feedback = ConfigLoader.lang.feedback_01.formatted(list);
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                //LlmClient.sendFeedbackAsync(feedback).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case TELEPORTPLAYER -> {
@@ -215,8 +226,7 @@ public class ModEvents {
                         feedback = ModActions.teleportPlayer(world, currentAvatarId, decision.value());
                     }
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -233,16 +243,10 @@ public class ModEvents {
                             posX = Integer.parseInt(parts[0]);
                             posZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            feedback = ConfigLoader.lang.feedback_02;
-                            // Feedback
-                            LlmClient.sendFeedbackAsync(feedback)
-                                    .thenAccept(dec -> applyDecision(server, dec));
+                            if (ConfigLoader.config.modLogging) LOGGER.warn("NumberFormatException: ModEvent.java -> case TELEPORTPOSITION {}", String.valueOf(e));
                         }
                     } else {
-                        feedback = ConfigLoader.lang.feedback_02;
-                        // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
+                        if (ConfigLoader.config.modLogging) LOGGER.info("Parts length problem: {}", "ModEvent.java -> case TELEPORTPOSITION");
                     }
                 }
 
@@ -254,8 +258,7 @@ public class ModEvents {
                         feedback = ModActions.teleportPositionPlayer(world, decision.value(), posX, posZ);
                     }
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -263,7 +266,6 @@ public class ModEvents {
                 String feedback;
                 currentAvatarPosX = 0;
                 currentAvatarPosZ = 0;
-
                 if (!decision.value3().isEmpty()) {
                     String[] parts = decision.value3().trim().split("\\s+");
                     if (parts.length == 2) {
@@ -271,41 +273,23 @@ public class ModEvents {
                             currentAvatarPosX = Integer.parseInt(parts[0]);
                             currentAvatarPosZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            feedback = ConfigLoader.lang.feedback_02;
-                            // Feedback
-                            LlmClient.sendFeedbackAsync(feedback)
-                                    .thenAccept(dec -> applyDecision(server, dec));
+                            if (ConfigLoader.config.modLogging) LOGGER.warn("NumberFormatException: ModEvent.java -> case SPAWNAVATAR : {}", String.valueOf(e));
                         }
                     } else {
-                        feedback = ConfigLoader.lang.feedback_02;
-                        // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
-                    }
+                        if (ConfigLoader.config.modLogging) LOGGER.info("Parts length problem: {}", "ModEvent.java -> case SPAWNAVATAR");
+                   }
                 }
-                //MinecraftServer server = world.getServer();
-                if (spawnModeratorAvatar(server, decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ)) {
-                    feedback = ConfigLoader.lang.feedback_03.formatted(decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ);
+                feedback = spawnModeratorAvatar(server, decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ);
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
 
-                } else {
-                    feedback = ConfigLoader.lang.feedback_04;
-                }
-                // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
             }
 
             case DESPAWNAVATAR -> {
                 String feedback;
                 ServerWorld world = findModeratorWorld(server);
-                if (despawnModeratorAvatar(world)) {
-                    feedback = ConfigLoader.lang.feedback_05;
-                } else {
-                    feedback = ConfigLoader.lang.feedback_06;
-                }
                 // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+                feedback = despawnModeratorAvatar(world);
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case WHEREIS -> {
@@ -317,15 +301,13 @@ public class ModEvents {
                     feedback = ModActions.whereIs(server, decision.value(), null);
                 }
                 // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case FEEDBACK -> {
                 String feedback = decision.value();
                 // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case GOTOPOSITION -> {
@@ -340,23 +322,16 @@ public class ModEvents {
                             posX = Integer.parseInt(parts[0]);
                             posZ = Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            feedback = ConfigLoader.lang.feedback_02;
-                            // Feedback
-                            LlmClient.sendFeedbackAsync(feedback)
-                                    .thenAccept(dec -> applyDecision(server, dec));
+                            if (ConfigLoader.config.modLogging) LOGGER.warn("NumberFormatException: ModEvent.java -> case GOTOPOSITION {}", String.valueOf(e));
                         }
                     } else {
-                        feedback = ConfigLoader.lang.feedback_02;
-                        // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
+                        if (ConfigLoader.config.modLogging) LOGGER.info("Parts length problem: {}", "ModEvent.java -> case GOTOPOSITION");
                     }
                 }
 
                 feedback = ModActions.startGotoPosition((ServerWorld) currentAvatarWorld, currentAvatarId, posX, posZ);
                 // Feedback
-                LlmClient.sendFeedbackAsync(feedback)
-                        .thenAccept(dec -> applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case DAMAGEPLAYER -> {
@@ -365,8 +340,7 @@ public class ModEvents {
                 if (world != null) {
                     feedback = ModActions.damagePlayer(world, decision.value(), Integer.parseInt(decision.value2()));
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -376,8 +350,7 @@ public class ModEvents {
                 if (world != null) {
                     feedback = ModActions.clearInventory(world, decision.value());
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -387,8 +360,7 @@ public class ModEvents {
                 if (world != null) {
                     feedback = ModActions.killPlayer(world, decision.value());
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -398,8 +370,7 @@ public class ModEvents {
                 if (world != null) {
                     feedback = ModActions.givePlayer(world, decision.value(), Item.byRawId(Integer.parseInt(decision.value2())), Integer.parseInt(decision.value3()));
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -409,8 +380,7 @@ public class ModEvents {
                 if (world != null) {
                     feedback = ModActions.changeWeather(world, decision.value());
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -420,8 +390,7 @@ public class ModEvents {
                 if (world != null) {
                     feedback = ModActions.changeTime(world, decision.value());
                     // Feedback
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             }
 
@@ -429,24 +398,24 @@ public class ModEvents {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                     return;
                 }
 
                 switch (decision.action()) {
-                    case WHISPER -> player.sendMessage(
-                            Text.literal("The Moderator: " + decision.value2()),false
-                    );
+                    case WHISPER -> {
+                        player.sendMessage(Text.literal("The Moderator: " + decision.value2()),false);
+                        String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value2(), decision.value());
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                    }
 
                     case WARN -> {
                         player.sendMessage(
                                 Text.literal("The Moderator: " + decision.value2()),false
                         );
                         String feedback = ConfigLoader.lang.feedback_08.formatted(decision.value(), decision.value2());
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info(feedback);
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                        if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
                     }
 
                     case KICK -> {
@@ -454,9 +423,8 @@ public class ModEvents {
                                 Text.literal("The Moderator: " + decision.value2())
                         );
                         String feedback = ConfigLoader.lang.feedback_09.formatted(decision.value(), decision.value2());
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info(feedback);
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                        if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
                     }
 
                     case FOLLOWPLAYER -> {
@@ -467,8 +435,7 @@ public class ModEvents {
                             feedback = ConfigLoader.lang.feedback_18;
                         }
                         // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                     }
 
                     case LOOKATPLAYER -> {
@@ -479,15 +446,13 @@ public class ModEvents {
                             feedback = ConfigLoader.lang.feedback_18;
                         }
                         // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                     }
 
                     case GOTOPLAYER -> {
                         String feedback = ModActions.startGotoPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value());
                         // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                     }
 
                     case MOVEAROUND -> {
@@ -498,15 +463,13 @@ public class ModEvents {
                             feedback = ConfigLoader.lang.feedback_18;
                         }
                         // Feedback
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                     }
 
                     case BAN -> {
                         if (!ConfigLoader.config.allowBanCommand) {
                             String feedback = ConfigLoader.lang.feedback_10;
-                            LlmClient.sendFeedbackAsync(feedback)
-                                    .thenAccept(dec -> applyDecision(server, dec));
+                            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                             return;
                         }
                         player.networkHandler.disconnect(
@@ -530,14 +493,13 @@ public class ModEvents {
                             }
                         }
                         String feedback = ConfigLoader.lang.feedback_11.formatted(decision.value(), decision.value2());
-                        LlmClient.sendFeedbackAsync(feedback)
-                                .thenAccept(dec -> applyDecision(server, dec));
-                        LOGGER.info(feedback);
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
+                        if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
                     }
                 }
             }
 
-            case IGNORE -> {
+            case STOPCHAIN -> {
                 // Do nothing
             }
         }

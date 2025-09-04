@@ -15,9 +15,12 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
+
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
@@ -38,7 +41,6 @@ public class ModActions {
             String dimensionName = dimensionKey.getValue().getPath();
             return String.format(ConfigLoader.lang.feedback_13, name, dimensionName, pos.getX(), pos.getY(), pos.getZ());
         }
-
         // Moderator mob
         ServerWorld world = findModeratorWorld(server);
         if (world == null) {
@@ -47,37 +49,32 @@ public class ModActions {
         Entity entity = Objects.requireNonNull(server.getWorld(world.getRegistryKey())).getEntity(currentMobUuid);
         if (entity != null) {
             BlockPos pos = entity.getBlockPos();
-            return String.format(ConfigLoader.lang.feedback_14, world, pos.getX(), pos.getY(), pos.getZ());
+            Identifier dimensionId = world.getRegistryKey().getValue();
+            String dimensionType = dimensionId.getPath();
+            return String.format(ConfigLoader.lang.feedback_14, dimensionType, pos.getX(), pos.getY(), pos.getZ());
         }
-
         return String.format(ConfigLoader.lang.feedback_07.formatted(name));
     }
 
     public static String teleportPlayer(ServerWorld world, UUID mobId, String playerName) {
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
-
         Entity entity = world.getEntity(mobId);
         if (!(entity instanceof MobEntity mob)) return ConfigLoader.lang.feedback_15.formatted(playerName);
-
         // Teleport player to mob's position
         BlockPos surface = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING, mob.getBlockPos());
         double x = surface.getX() + 0.5;
         double y = surface.getY() + 1.0;
         double z = surface.getZ() + 0.5;
-
         player.networkHandler.requestTeleport(x, y, z, mob.getYaw(), mob.getPitch());
-
         return ConfigLoader.lang.feedback_33.formatted(playerName);
     }
 
     public static String clearInventory(ServerWorld world, String playerName) {
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
-
         // Clear inventory but not Armor and off-hand
-        player.getInventory().main.replaceAll(ignored -> ItemStack.EMPTY);
-
+        Collections.fill(player.getInventory().main, ItemStack.EMPTY);
         return ConfigLoader.lang.feedback_39.formatted(playerName);
     }
 
@@ -98,12 +95,10 @@ public class ModActions {
     public static String givePlayer(ServerWorld world, String playerName, Item item, int amount) {
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
-
         // Create ItemStack with Item
         ItemStack stack = new ItemStack(item, amount); // How many items
         // Try to put in inventory
         boolean success = player.getInventory().insertStack(stack);
-
         // If inventory is full, drop in front of player
         if (!success) {
             player.dropItem(stack, false);
@@ -125,7 +120,6 @@ public class ModActions {
             default:
             return ConfigLoader.lang.feedback_02;
         }
-
         return ConfigLoader.lang.feedback_42.formatted(weather);
     }
 
@@ -149,14 +143,12 @@ public class ModActions {
             default:
                 return ConfigLoader.lang.feedback_02;
         }
-
         return ConfigLoader.lang.feedback_43.formatted(time);
     }
 
     public static String teleportAvatar(ServerWorld world, UUID mobId, String playerName) {
         Entity entity = world.getEntity(mobId);
         if (!(entity instanceof MobEntity mob)) return ConfigLoader.lang.feedback_15.formatted(playerName);
-
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
 
@@ -176,40 +168,32 @@ public class ModActions {
     public static String teleportPositionPlayer(ServerWorld world, String playerName, double posX, double posZ) {
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
-
         // Check for surface
         BlockPos surface = world.getTopPosition(
                 Heightmap.Type.MOTION_BLOCKING,
                 new BlockPos((int) posX, 0, (int) posZ)
         );
-
         double x = surface.getX() + 0.5;
         double y = surface.getY() + 1.0;
         double z = surface.getZ() + 0.5;
-
         // Teleport player
         player.networkHandler.requestTeleport(x, y, z, player.getYaw(), player.getPitch());
-
         return ConfigLoader.lang.feedback_35.formatted(playerName);
     }
 
 
     // Set a new Goal
     public static String teleportPositionAvatar(ServerWorld world, UUID mobId, double posX, double posZ) {
-
         Entity entity = world.getEntity(mobId);
         if (!(entity instanceof MobEntity mob)) return ConfigLoader.lang.feedback_37.formatted(posX, posZ);
-
         // Check for surface
         BlockPos surface = world.getTopPosition(
                 Heightmap.Type.MOTION_BLOCKING,
                 new BlockPos((int) posX, 0, (int) posZ)
         );
-
         double x = surface.getX() + 0.5;
         double y = surface.getY() + 1.0;
         double z = surface.getZ() + 0.5;
-
         // Teleport mob to position
         mob.refreshPositionAndAngles(
                 x,
@@ -371,4 +355,5 @@ public class ModActions {
 
         return false; // Goal not found
     }
+
 }

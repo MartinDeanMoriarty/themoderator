@@ -26,6 +26,7 @@ public record ModerationDecision(Action action, String value, String value2, Str
         GIVEPLAYER,
         CHANGEWEATHER,
         CHANGETIME,
-        STOP
+        STOPACTION,
+        STOPCHAIN
     }
 }

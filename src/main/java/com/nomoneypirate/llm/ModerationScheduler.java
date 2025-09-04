@@ -5,11 +5,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import com.nomoneypirate.config.ConfigLoader;
-
-import static com.nomoneypirate.events.ModEvents.applyDecision;
-
 import com.google.gson.*;
 import net.minecraft.server.MinecraftServer;
+
+import static com.nomoneypirate.events.ModEvents.applyDecision;
 
 public class ModerationScheduler {
 
@@ -17,28 +16,22 @@ public class ModerationScheduler {
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public static void runScheduledTask(MinecraftServer server) {
-        System.out.println("themoderator - Schedule started.");
+        // create snapshot and clear list and clear messageBuffer
         List<String> snapshot;
         synchronized (messageBuffer) {
             if (messageBuffer.isEmpty()) return;
             snapshot = new ArrayList<>(messageBuffer);
             messageBuffer.clear();
         }
-
+        // Snapshot to summary
         String summary = String.join("\n", snapshot);
+        // If summary is empty, don't let the task go to waste, use it to do something.
+        // So, let's tell players about the activation keywords
         String keyWords = ConfigLoader.config.activationKeywords.toString();
         if (summary.isEmpty()) summary = ConfigLoader.lang.feedback_38.formatted(keyWords);
 
         // Send summary to llm
-        LlmClient.sendSummaryAsync(summary)
-                .thenAccept(dec -> applyDecision(server, dec));
-
-        // For now, we just clear messages.
-        // Therefor the llm is not able to "look back" as good!?
-        // And has probably bad "overlapping knowledge"!?
-        // clearMessages();
-        System.out.println("themoderator - Schedule Task done.");
-
+        LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, summary, null).thenAccept(dec -> applyDecision(server, dec));
     }
 
     public static void addMessage(String source, String content) {
@@ -47,7 +40,6 @@ public class ModerationScheduler {
         synchronized (messageBuffer) {
             messageBuffer.add(entry);
         }
-        System.out.println("themoderator - Schedule line added.");
     }
 
     public static void clearMessages() {

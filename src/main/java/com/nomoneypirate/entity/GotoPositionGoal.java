@@ -45,8 +45,7 @@ public class GotoPositionGoal  extends Goal {
                 stuckCounter++;
                 if (stuckCounter > 40) {
                     String feedback = ConfigLoader.lang.feedback_28;
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(mob.getServer(), dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(mob.getServer(), dec));
                 }
             } else {
                 stuckCounter = 0;
@@ -54,8 +53,7 @@ public class GotoPositionGoal  extends Goal {
         } else {
             mob.getNavigation().stop();
             String feedback = ConfigLoader.lang.feedback_31.formatted(posX, posZ);
-            LlmClient.sendFeedbackAsync(feedback)
-                    .thenAccept(dec -> applyDecision(mob.getServer(), dec));
+            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(mob.getServer(), dec));
         }
     }
 

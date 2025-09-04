@@ -13,39 +13,27 @@ public class ConfigLoader {
     public static LangConfig lang;
 
     public static void loadConfig() {
-        // Using default fabric config directory
-        // Load config file
         Path configPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator.json");
-        try {
-            if (!Files.exists(configPath)) {
-                config = new ModConfig(); // Defaults
-                save(configPath, config);
-            } else {
-                String json = Files.readString(configPath);
-                config = new Gson().fromJson(json, ModConfig.class);
-            }
-        } catch (IOException e) {
-            LOGGER.error("[themoderator] Error loading config file: {}", e.getMessage());
-            config = new ModConfig(); // Fallback
-        }
+        config = load(configPath, ModConfig.class, new ModConfig(), "[themoderator] Error loading config file");
     }
-    public static void loadLang() {
-        // Using default fabric config directory
-        // Load lang file
-        Path langPath = FabricLoader.getInstance().getConfigDir().resolve(ConfigLoader.config.languageFileName + ".json");
-        try {
-            if (!Files.exists(langPath)) {
-                lang = new LangConfig(); // Defaults
-                save(langPath, lang);
-            } else {
-                String json = Files.readString(langPath);
-                lang = new Gson().fromJson(json, LangConfig.class);
 
+    public static void loadLang() {
+        Path langPath = FabricLoader.getInstance().getConfigDir().resolve(config.languageFileName + ".json");
+        lang = load(langPath, LangConfig.class, new LangConfig(), "[themoderator] Error loading language file");
+    }
+
+    private static <T> T load(Path path, Class<T> clazz, T defaultInstance, String errorMessage) {
+        try {
+            if (!Files.exists(path)) {
+                save(path, defaultInstance);
+                return defaultInstance;
+            } else {
+                String json = Files.readString(path);
+                return new Gson().fromJson(json, clazz);
             }
         } catch (IOException e) {
-            //System.err.println("[themoderator] Error loading config: " + e.getMessage());
-            LOGGER.error("[themoderator] Error loading language file: {}", e.getMessage());
-            lang = new LangConfig(); // Fallback
+            if (ConfigLoader.config.modLogging) LOGGER.error("{}: {}", errorMessage, e.getMessage());
+            return defaultInstance;
         }
     }
 

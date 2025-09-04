@@ -45,9 +45,8 @@ public class FollowPlayerGoal extends Goal {
             if (currentPos.squaredDistanceTo(lastPosition) < 0.01) {
                 stuckCounter++;
                 if (stuckCounter > 40) {
-                    String feedback = ConfigLoader.lang.feedback_28; // z. B. "Avatar steckt fest"
-                    LlmClient.sendFeedbackAsync(feedback)
-                            .thenAccept(dec -> applyDecision(server, dec));
+                    String feedback = ConfigLoader.lang.feedback_28; // Avatar is stuck
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback, null).thenAccept(dec -> applyDecision(server, dec));
                 }
             } else {
                 stuckCounter = 0;

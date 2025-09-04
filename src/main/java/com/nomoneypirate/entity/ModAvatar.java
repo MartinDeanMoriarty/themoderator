@@ -1,6 +1,5 @@
 package com.nomoneypirate.entity;
 
-import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.minecraft.entity.Entity;
@@ -12,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
@@ -63,7 +63,10 @@ public class ModAvatar {
     public static String currentModeratorAvatar() {
         String feedback;
         if (currentAvatarId != null) {
-            feedback = ConfigLoader.lang.feedback_16.formatted(currentAvatarType, currentAvatarWorld, currentAvatarPosX, currentAvatarPosZ);
+
+            Identifier dimensionId = currentAvatarWorld.getRegistryKey().getValue();
+            String dimensionType = dimensionId.getPath();
+            feedback = ConfigLoader.lang.feedback_16.formatted(currentAvatarType, dimensionType, currentAvatarPosX, currentAvatarPosZ);
         } else {
             feedback = ConfigLoader.lang.feedback_15;
         }
@@ -71,16 +74,13 @@ public class ModAvatar {
     }
 
     // Spawn an Avatar with given type and coordinates
-    public static boolean spawnModeratorAvatar(MinecraftServer server, String dim, String type, int x, int z) {
+    public static String spawnModeratorAvatar(MinecraftServer server, String dim, String type, int x, int z) {
         ServerWorld world = getWorldFromString(server, dim);
-        if (world == null) return false;
-
+        if (world == null) return ConfigLoader.lang.feedback_02;
+        // In case there is already an Avatar
+        if (currentAvatarId != null) return ConfigLoader.lang.feedback_46;
         // Get ground position
         BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
-
-        // In case there is already an Avatar, we just remove it
-        if (despawnModeratorAvatar(world)) LOGGER.info("Old Avatar removed");
-
         // Mob-Typ
         EntityType<?> entityType = switch (type.toUpperCase(Locale.ROOT)) {
             case "CHICKEN" -> EntityType.CHICKEN;
@@ -93,11 +93,11 @@ public class ModAvatar {
             default -> null;
         };
         // Make sure entityType is set
-        if (entityType == null) return false;
+        if (entityType == null) return ConfigLoader.lang.feedback_02;
         // Create entity
         Entity entity = entityType.create(world, null);
         // Make sure entity is set
-        if (entity == null) return false;
+        if (entity == null) return ConfigLoader.lang.feedback_02;
         // Chunk loading
         world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, true);
         // Spawn the Avatar
@@ -120,14 +120,15 @@ public class ModAvatar {
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
         entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
-        return true;
+        return ConfigLoader.lang.feedback_03.formatted(currentAvatarWorld, currentAvatarType, currentAvatarPosX, currentAvatarPosZ);
     }
 
     // This will remove a registered Avatar and a lingering mob with the name "The Moderator" as well
-    public static boolean despawnModeratorAvatar(ServerWorld world) {
+    public static String despawnModeratorAvatar(ServerWorld world) {
         boolean found = false;
         // Remove registered Mob
         if (currentAvatarId != null) {
+            found = true;
             Entity e = world.getEntity(currentAvatarId);
             if (e != null) e.discard();
             world.setChunkForced(currentAvatarPosX, currentAvatarPosZ, false);
@@ -136,23 +137,18 @@ public class ModAvatar {
             currentAvatarPosX = null;
             currentAvatarPosZ = null;
             currentAvatarWorld = null;
-            LOGGER.info("Avatar despawned.");
-            found = true;
         } else {
-            LOGGER.info("No Avatar to despawn.");
-        }
-        // Remove every Mob named "The Moderator"
-        for (Entity entity : world.iterateEntities()) {
-            if (entity.hasCustomName() &&
-                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
-                    !(entity instanceof PlayerEntity)) {
-
-                entity.discard(); // Remove Entity
-                found = true;
-                LOGGER.info("Removed lingering entity: {}", entity.getType().toString());
+            // Remove every Mob named "The Moderator"
+            for (Entity entity : world.iterateEntities()) {
+                if (entity.hasCustomName() &&
+                        "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
+                        !(entity instanceof PlayerEntity)) {
+                    entity.discard(); // Remove Entity
+                    found = true;
+                }
             }
         }
-        return found;
+        if (!found) return ConfigLoader.lang.feedback_06; else return ConfigLoader.lang.feedback_05;
     }
 
     public static void updateChunkAnchor(ServerWorld world, Entity entity) {

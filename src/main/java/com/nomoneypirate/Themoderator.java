@@ -30,9 +30,8 @@ public class Themoderator implements ModInitializer {
         ModCommands.registerCommands();
         //Register mod events
         ModEvents.registerEvents();
-
-        System.out.println(MOD_ID + " -Initialized.");
-        LOGGER.info("Initialized.");
+        //System.out.println(MOD_ID + " -Initialized.");
+        if (ConfigLoader.config.modLogging) LOGGER.info("Initialized.");
     }
 
 }

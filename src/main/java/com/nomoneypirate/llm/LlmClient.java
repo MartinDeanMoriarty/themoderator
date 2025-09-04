@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import com.google.gson.*;
 
 public final class LlmClient {
+
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(ConfigLoader.config.connectionTimeout))
@@ -31,57 +32,51 @@ public final class LlmClient {
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
     private static final String FEEDBACK_PROMPT = ConfigLoader.lang.feedbackPROMPT;
     private static final String SUMMARY_PROMPT = ConfigLoader.lang.summaryPROMPT;
+    // Set llm model token limit
+    static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
+
+    // We have different situations so let's react to them
+    public enum ModerationType {
+        MODERATION((rules, a, b) -> SYSTEM_PROMPT.formatted(rules, a, b), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
+        FEEDBACK((rules, a, b) -> FEEDBACK_PROMPT.formatted(rules, a), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
+        SUMMARY((rules, a, b) -> SUMMARY_PROMPT.formatted(rules, a), ConfigLoader.config.scheduleLogFilename, ConfigLoader.config.scheduleLogging);
+
+        public interface PromptBuilder {
+            String build(String rules, String arg1, String arg2);
+        }
+
+        final PromptBuilder builder;
+        final String logFilenamePrefix;
+        final boolean loggingEnabled;
+
+        ModerationType(PromptBuilder builder, String logFilenamePrefix, boolean loggingEnabled) {
+            this.builder = builder;
+            this.logFilenamePrefix = logFilenamePrefix;
+            this.loggingEnabled = loggingEnabled;
+        }
+
+        public String buildPrompt(String rules, String arg1, String arg2) {
+            return builder.build(rules, arg1, arg2);
+        }
+    }
 
     // To LLM
     // Moderation
-    public static CompletableFuture<ModerationDecision> moderateAsync(String playerName, String message) {
-        String prompt = SYSTEM_PROMPT.formatted(SYSTEM_RULES, playerName, message);
+    public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg1, String arg2) {
 
+        if (type == ModerationType.FEEDBACK) contextManager.addMessage("recall", "Feedback:" + arg1);
+        if (type == ModerationType.MODERATION) contextManager.addMessage("recall", "Spieler:" + arg1 + "Nachricht:" + arg2);
+
+
+        String prompt = type.buildPrompt(SYSTEM_RULES, arg1, arg2);
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-        // build json
-        JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
-        body.addProperty("prompt", prompt);
-        body.addProperty("stream", false);
-
-        // Make request
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                .build();
-
-        // Input logging
-        String jsonBody = GSON.toJson(body);
-        String filename = ConfigLoader.config.llmLogFilename+".log";
-        if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Request:\n" + jsonBody);
-
-        // Get response
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenApply(resp -> {
-                    if (resp.statusCode() / 100 != 2) {
-                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
-                    }
-                    // Ollama /api/generate (stream=false) -> {"model":"...","created_at":"...","response":"...","done":true,...}
-                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String responseText = json.get("response").getAsString().trim();
-                    // Output logging
-                    if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Response:\n" + responseText);
-                    return parseDecision(responseText);
-                });
-    }
-
-    // Feedback to LLM
-    public static CompletableFuture<ModerationDecision> sendFeedbackAsync(String feedback) {
-        String prompt = FEEDBACK_PROMPT.formatted(SYSTEM_RULES, feedback);
-
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        //Build a prompt with token limit
+        String fullPrompt = contextManager.buildPrompt("recall", prompt);
 
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);
-        body.addProperty("prompt", prompt);
+        body.addProperty("prompt", fullPrompt);
         body.addProperty("stream", false);
 
         HttpRequest req = HttpRequest.newBuilder()
@@ -91,10 +86,12 @@ public final class LlmClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
 
-        // Input logging
         String jsonBody = GSON.toJson(body);
-        String filename = ConfigLoader.config.llmLogFilename+".log";
-        if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Feedback Request:\n" + jsonBody);
+        String filename = type.logFilenamePrefix + (type == ModerationType.SUMMARY
+                ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".log"
+                : ".log");
+
+        if (type.loggingEnabled) logToFile(filename, "[" + timestamp + "] Request:\n" + jsonBody);
 
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
@@ -103,48 +100,7 @@ public final class LlmClient {
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String responseText = json.get("response").getAsString().trim();
-                    // Output logging
-
-                    if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Feedback Response:\n" + responseText);
-                    return parseDecision(responseText);
-                });
-    }
-
-    // Summary to LLM
-    public static CompletableFuture<ModerationDecision> sendSummaryAsync(String feedback) {
-        String prompt = SUMMARY_PROMPT.formatted(SYSTEM_RULES, feedback);
-
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
-        body.addProperty("prompt", prompt);
-        body.addProperty("stream", false);
-
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                .build();
-        String jsonBody = GSON.toJson(body);
-
-        // Input logging
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
-        String logTimeStamp = LocalDateTime.now().format(formatter);
-        String filename = ConfigLoader.config.scheduleLogFilename + logTimeStamp + ".log";
-        if (ConfigLoader.config.scheduleLogging) logToFile(filename, "Summary:\n" + jsonBody);
-
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenApply(resp -> {
-                    if (resp.statusCode() / 100 != 2) {
-                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
-                    }
-                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String responseText = json.get("response").getAsString().trim();
-                    // Output logging
-
-                    if (ConfigLoader.config.llmLogging) logToFile(filename, "[" + timestamp + "] Feedback Response:\n" + responseText);
+                    if (type.loggingEnabled) logToFile(filename, "[" + timestamp + "] Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
     }
@@ -197,13 +153,14 @@ public final class LlmClient {
                 case "GIVEPLAYER" -> ModerationDecision.Action.GIVEPLAYER;
                 case "CHANGEWEATHER" -> ModerationDecision.Action.CHANGEWEATHER;
                 case "CHANGETIME" -> ModerationDecision.Action.CHANGETIME;
-                case "STOP" -> ModerationDecision.Action.STOP;
+                case "STOPACTION" -> ModerationDecision.Action.STOPACTION;
+                case "STOPCHAIN" -> ModerationDecision.Action.STOPCHAIN;
                 default -> ModerationDecision.Action.IGNORE;
             };
             return new ModerationDecision(action, value, value2, value3);
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON
-            LOGGER.info("Unclear output from llm model.");
+            if (ConfigLoader.config.modLogging) LOGGER.info("Unclear output from llm model.");
             // Feedback
             String feedback = ConfigLoader.lang.feedback_12;
             return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"", "");
@@ -226,7 +183,7 @@ public final class LlmClient {
             Files.createDirectories(logDir);
             Files.writeString(logFile, content + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
-            LOGGER.warn("Logfile save error!");
+            if (ConfigLoader.config.modLogging) LOGGER.warn("Logfile save error!");
         }
     }
 
