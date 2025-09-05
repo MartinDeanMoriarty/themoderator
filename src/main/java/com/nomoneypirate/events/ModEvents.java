@@ -250,7 +250,7 @@ public class ModEvents {
                             if (ConfigLoader.config.modLogging) LOGGER.error("NumberFormatException: ModEvent.java -> case TELEPORTPOSITION {}", String.valueOf(e));
                         }
                     } else {
-                        if (ConfigLoader.config.modLogging) LOGGER.warn("Parts length problem: {}", "ModEvent.java -> case TELEPORTPOSITION");
+                        if (ConfigLoader.config.modLogging) LOGGER.warn("a Parts length problem: {}", "ModEvent.java -> case TELEPORTPOSITION");
                     }
                 }
 
@@ -280,7 +280,7 @@ public class ModEvents {
                             if (ConfigLoader.config.modLogging) LOGGER.error("NumberFormatException: ModEvent.java -> case SPAWNAVATAR : {}", String.valueOf(e));
                         }
                     } else {
-                        if (ConfigLoader.config.modLogging) LOGGER.warn("Parts length problem: {}", "ModEvent.java -> case SPAWNAVATAR");
+                        if (ConfigLoader.config.modLogging) LOGGER.warn("A Parts length problem: {}", "ModEvent.java -> case SPAWN AVATAR");
                    }
                 }
                 feedback = spawnModeratorAvatar(server, decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ);

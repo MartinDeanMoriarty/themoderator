@@ -8,10 +8,10 @@ public class LangConfig {
     public String welcomeText = "Begrüße den Spieler %s.";
     public String feedback_01 = "Aktive Spieler: %s";
     public String feedback_02 = "Falsche verwendung.";
-    public String feedback_03 = "Avatar gespawned als: %s in Dimension %s bei X: %d, Z: %d";
+    public String feedback_03 = "Avatar spawned als: %s in Dimension %s bei X: %d, Z: %d";
     public String feedback_04 = "Spawning war nicht möglich.";
     public String feedback_05 = "Avatar despawned.";
-    public String feedback_06 = "Kein Avatar zum despawnen vorhanden.";
+    public String feedback_06 = "Kein Avatar zum de spawnen vorhanden.";
     public String feedback_07 = "Spieler %s nicht gefunden.";
     public String feedback_08 = "Spieler %s erfolgreich gewarnt mit Grund: %s";
     public String feedback_09 = "Spieler %s erfolgreich gekickt mit Grund: %s";
@@ -43,7 +43,7 @@ public class LangConfig {
     public String feedback_35 = "Spieler %s wurde zu Position X: %d , Z: %d teleportiert.";
     public String feedback_36 = "Dein Avatar wurde zu Position X: %d , Z: %d teleportiert.";
     public String feedback_37 = "Dein Avatar konnte nicht zu Position X: %d , Z: %d teleportiert werden.";
-    public String feedback_38 = "Keine Einträge. Nutze doch die Gelegenheit um etwas Werbung für dich zu machen. Erwähne die Keywörter  %s.";
+    public String feedback_38 = "Keine Einträge. Nutze doch die Gelegenheit um etwas Werbung für dich zu machen. Erwähne die Key-Wörter  %s.";
     public String feedback_39 = "Das Inventar von Spieler %s wurde geleert.";
     public String feedback_40 = "Der Spieler %s würde gekillt.";
     public String feedback_41 = "Du hast Der Spieler %s das Item %s gegeben.";
