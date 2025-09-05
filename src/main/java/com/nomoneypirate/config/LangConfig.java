@@ -5,7 +5,7 @@ public class LangConfig {
     // Feedback should be as clear as possible
     // because a feedback can cause the llm to perform another action
     // or keep it stuck in a loop.
-    public String welcomeText = "Begrüße den Spieler.";
+    public String welcomeText = "Begrüße den Spieler %s.";
     public String feedback_01 = "Aktive Spieler: %s";
     public String feedback_02 = "Falsche verwendung.";
     public String feedback_03 = "Avatar gespawned als: %s in Dimension %s bei X: %d, Z: %d";
@@ -52,27 +52,19 @@ public class LangConfig {
     public String feedback_44 = "Du hast ein Anfrage ignoriert. Das ist kein Fehler!";
     public String feedback_45 = "Du hast eine Nachricht: %s an %s geschrieben.";
     public String feedback_46 = "Avatar schon vorhanden. Verwende WHEREIS!";
-    // This is to format the prompts
+    public String feedback_47 = "Spieler: %s Nachricht: %s";
+    public String feedback_48 = "Server Nachricht: %s ";
+    public String feedback_49 = "Feedback: %s";
+    public String feedback_50 = "Zusammenfassung:  %s";
+    public String feedback_51 = "Server:  %s";
+    // This is to format the prompt
     public String systemPrompt = """
             System Regeln:
             %s
             
-            Spieler: %s
-            Nachricht: %s
-            """;
-    public String feedbackPROMPT = """
-            System Regeln:
             %s
-            
-            Feedback: %s
             """;
-    public String summaryPROMPT = """
-            System Regeln:
-            %s
-            
-            Zusammenfassung: %s
-            """;
-    // This is what some call "system prompt". Used to steer the llm in the right direction
+    // Used to steer the llm in the right direction
     public String systemRules = """
             Du bist ein Minecraft Server Moderator. Antworte ausschließlich mit JSON im folgenden Format:
             {"action": "<ACTION>", "value": "<VALUE>", "value2": "<VALUE2>", "value3": "<VALUE3>"}

@@ -28,21 +28,19 @@ public final class LlmClient {
     private static final Gson GSON = new GsonBuilder().create();
     // Set model name + prompts
     private static final String MODEL = ConfigLoader.config.model; // Ollama-Model
-    private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
-    private static final String FEEDBACK_PROMPT = ConfigLoader.lang.feedbackPROMPT;
-    private static final String SUMMARY_PROMPT = ConfigLoader.lang.summaryPROMPT;
+    private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     // Set llm model token limit
     static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
 
     // We have different situations so let's react to them
     public enum ModerationType {
-        MODERATION((rules, a, b) -> SYSTEM_PROMPT.formatted(rules, a, b), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
-        FEEDBACK((rules, a, b) -> FEEDBACK_PROMPT.formatted(rules, a), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
-        SUMMARY((rules, a, b) -> SUMMARY_PROMPT.formatted(rules, a), ConfigLoader.config.scheduleLogFilename, ConfigLoader.config.scheduleLogging);
+        MODERATION((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
+        FEEDBACK((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
+        SUMMARY((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.scheduleLogFilename, ConfigLoader.config.scheduleLogging);
 
         public interface PromptBuilder {
-            String build(String rules, String arg1, String arg2);
+            String build(String rules, String arg1);
         }
 
         final PromptBuilder builder;
@@ -55,24 +53,23 @@ public final class LlmClient {
             this.loggingEnabled = loggingEnabled;
         }
 
-        public String buildPrompt(String rules, String arg1, String arg2) {
-            return builder.build(rules, arg1, arg2);
+        public String buildPrompt(String rules, String arg1) {
+            return builder.build(rules, arg1);
         }
     }
 
     // To LLM
     // Moderation
-    public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg1, String arg2) {
+    public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg1) {
 
-        if (type == ModerationType.FEEDBACK) contextManager.addMessage("recall", "Feedback:" + arg1);
-        if (type == ModerationType.MODERATION) contextManager.addMessage("recall", "Spieler:" + arg1 + "Nachricht:" + arg2);
-
-
-        String prompt = type.buildPrompt(SYSTEM_RULES, arg1, arg2);
+        String prompt = type.buildPrompt(SYSTEM_RULES, arg1);
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-        //Build a prompt with token limit
+        // Build a prompt with token limit
         String fullPrompt = contextManager.buildPrompt("recall", prompt);
+        // Add to context manager
+        if (type == ModerationType.FEEDBACK) contextManager.addMessage("recall", " Feedback: " + arg1);
+        if (type == ModerationType.MODERATION) contextManager.addMessage("recall", " Chat: " + arg1);
 
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);
@@ -103,6 +100,7 @@ public final class LlmClient {
                     if (type.loggingEnabled) logToFile(filename, "[" + timestamp + "] Response:\n" + responseText);
                     return parseDecision(responseText);
                 });
+
     }
 
     // Parse response

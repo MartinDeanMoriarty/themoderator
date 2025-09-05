@@ -31,12 +31,12 @@ public class ModerationScheduler {
         if (summary.isEmpty()) summary = ConfigLoader.lang.feedback_38.formatted(keyWords);
 
         // Send summary to llm
-        LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, summary, null).thenAccept(dec -> applyDecision(server, dec));
+        LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, summary).thenAccept(dec -> applyDecision(server, dec));
     }
 
-    public static void addMessage(String source, String content) {
+    public static void addMessage(String content) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME);
-        String entry = "[" + timestamp + "] " + source + ": " + content;
+        String entry = "[" + timestamp + "] " + content;
         synchronized (messageBuffer) {
             messageBuffer.add(entry);
         }
