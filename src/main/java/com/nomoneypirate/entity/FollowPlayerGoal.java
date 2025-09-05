@@ -46,7 +46,7 @@ public class FollowPlayerGoal extends Goal {
                 stuckCounter++;
                 if (stuckCounter > 40) {
                     String feedback = ConfigLoader.lang.feedback_28; // Avatar is stuck
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback).thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                 }
             } else {
                 stuckCounter = 0;

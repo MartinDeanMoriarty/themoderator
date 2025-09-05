@@ -26,12 +26,12 @@ public class ModerationScheduler {
         // Snapshot to summary
         String summary = String.join("\n", snapshot);
         // If summary is empty, don't let the task go to waste, use it to do something.
-        // So, let's tell players about the activation keywords
+        // So, let the llm tell players about the activation keywords
         String keyWords = ConfigLoader.config.activationKeywords.toString();
         if (summary.isEmpty()) summary = ConfigLoader.lang.feedback_38.formatted(keyWords);
 
         // Send summary to llm
-        LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, summary).thenAccept(dec -> applyDecision(server, dec));
+        LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.feedback_50.formatted(summary)).thenAccept(dec -> applyDecision(server, dec));
     }
 
     public static void addMessage(String content) {

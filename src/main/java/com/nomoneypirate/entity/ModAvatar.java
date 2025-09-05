@@ -76,7 +76,7 @@ public class ModAvatar {
     // Spawn an Avatar with given type and coordinates
     public static String spawnModeratorAvatar(MinecraftServer server, String dim, String type, int x, int z) {
         ServerWorld world = getWorldFromString(server, dim);
-        if (world == null) return ConfigLoader.lang.feedback_02;
+        if (world == null) return ConfigLoader.lang.feedback_04;
         // In case there is already an Avatar
         if (currentAvatarId != null) return ConfigLoader.lang.feedback_46;
         // Get ground position

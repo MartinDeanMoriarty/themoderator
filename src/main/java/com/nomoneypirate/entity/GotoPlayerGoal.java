@@ -43,7 +43,7 @@ public class GotoPlayerGoal  extends Goal {
                     // Mob is stuck or target unreachable
                     String feedback = ConfigLoader.lang.feedback_28;
                     // Feedback to llm
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback).thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                 }
             } else {
                 stuckCounter = 0; // Reset when movement is detected
@@ -53,7 +53,7 @@ public class GotoPlayerGoal  extends Goal {
             // Mob has reached target
             String feedback = ConfigLoader.lang.feedback_29.formatted(target);
             // Feedback to llm
-            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, feedback).thenAccept(dec -> applyDecision(server, dec));
+            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
 
         }
     }
