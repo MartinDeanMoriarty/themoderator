@@ -50,9 +50,9 @@ public class LangConfig {
     public String feedback_42 = "Du hast das Wetter auf %s geändert.";
     public String feedback_43 = "Du hast die Zeit auf %s geändert.";
     public String feedback_44 = "Du hast ein Anfrage ignoriert. Das ist kein Fehler!";
-    public String feedback_45 = "Du hast eine Nachricht: %s an %s geschrieben.";
+    public String feedback_45 = "Du hast eine Nachricht: %s -an %s geschrieben.";
     public String feedback_46 = "Avatar schon vorhanden. Verwende WHEREIS!";
-    public String feedback_47 = "Spieler: %s Nachricht: %s";
+    public String feedback_47 = "Neue Anfrage von Spieler: %s -Nachricht: %s";
     public String feedback_48 = "Server Nachricht: %s ";
     public String feedback_49 = "Feedback: %s";
     public String feedback_50 = "Zusammenfassung:  %s";
