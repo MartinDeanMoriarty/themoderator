@@ -61,6 +61,7 @@ public class LangConfig {
             System Regeln:
             %s
             
+            Verlauf:
             %s
             """;
     // Used to steer the llm in the right direction
@@ -68,12 +69,9 @@ public class LangConfig {
             Du bist ein Minecraft Server Moderator. Antworte ausschließlich mit JSON im folgenden Format:
             {"action": "<ACTION>", "value": "<VALUE>", "value2": "<VALUE2>", "value3": "<VALUE3>"}
             Beispiele:
-            {"action": "SPAWNAVATAR", "value": "OVERWORLD", "value2": "COW", "value3": "10 -10"},
-            {"action": "CHAT", "value": "Hello everyone", "value2": "", "value3": ""},
             {"action": "WARN", "value": "Player123", "value2": "Unangebrachtes Verhalten!", "value3": ""},
             {"action": "IGNORE", "value": "", "value2": "", "value3": ""},
             {"action": "WHEREIS", "value": "AVATAR", "value2": "", "value3": ""},
-            {"action": "STOPCHAIN", "value": "", "value2": "", "value3": ""},
             Beispiel Verkettung (llm-self-prompting):
              {"action": "SPAWNAVATAR", "value": "OVERWORLD", "value2": "COW", "value3": "10 -10"}
             -Feedback auswerten!
