@@ -61,36 +61,7 @@ public final class LlmClient {
         }
     }
 
-    public static void warmupModel() {
-        if (isWarmedUp.get()) {
-            CompletableFuture.completedFuture(null);
-            return;
-        }
-        isWarmedUp.set(true);
-        //Empty prompt should just load a model
-        String prompt = "";
-        JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
-        body.addProperty("prompt", prompt);
-        body.addProperty("stream", false);
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                HttpRequest httpRequest = HttpRequest.newBuilder()
-                        .uri(OLLAMA_URI)
-                        .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                        .build();
-                HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
-            } catch (Exception e) {
-                if (ConfigLoader.config.modLogging) LOGGER.warn("LLM Warmup failed: {}", e.getMessage());
-            }
-        });
-    }
-
     // To LLM
-    // Moderation
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -205,6 +176,35 @@ public final class LlmClient {
             return matcher.group();
         }
         return "{}";
+    }
+
+    // Used at mod init so the llm has a chance to be ready when the world is loaded
+    public static void warmupModel() {
+        if (isWarmedUp.get()) {
+            CompletableFuture.completedFuture(null);
+            return;
+        }
+        isWarmedUp.set(true);
+        // An empty prompt should just load a model
+        String prompt = "";
+        JsonObject body = new JsonObject();
+        body.addProperty("model", MODEL);
+        body.addProperty("prompt", prompt);
+        body.addProperty("stream", false);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(OLLAMA_URI)
+                        .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+                        .build();
+                HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
+            } catch (Exception e) {
+                if (ConfigLoader.config.modLogging) LOGGER.warn("LLM Warmup failed: {}", e.getMessage());
+            }
+        });
     }
 
     public static void logToFile(String filename, String content) {

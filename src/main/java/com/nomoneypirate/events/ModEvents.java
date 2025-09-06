@@ -108,10 +108,10 @@ public class ModEvents {
             });
         });
 
-        // Intercept game messages to collect for the llm
+        // Intercept game messages for moderation scheduler
         ServerMessageEvents.GAME_MESSAGE.register((server, text, params) -> {
             String content = text.getString();
-            // Add to moderation scheduler
+            // Add Game Messages to moderation scheduler
             String serverMessage = ConfigLoader.lang.feedback_48.formatted(content);
             ModerationScheduler.addMessage(serverMessage);
         });
@@ -123,7 +123,8 @@ public class ModEvents {
 
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
-            // Add to moderation scheduler
+
+            // Add Chat Messages to moderation scheduler
             String chatMessage = ConfigLoader.lang.feedback_47.formatted(playerName, content);
             ModerationScheduler.addMessage(chatMessage);
 
