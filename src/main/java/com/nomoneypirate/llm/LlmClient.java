@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +33,8 @@ public final class LlmClient {
     private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     // Set llm model token limit
     static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
+    // Make a hard decision
+    private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
 
     // We have different situations so let's react to them
     public enum ModerationType {
@@ -58,6 +61,34 @@ public final class LlmClient {
         }
     }
 
+    public static void warmupModel() {
+        if (isWarmedUp.get()) {
+            CompletableFuture.completedFuture(null);
+            return;
+        }
+        isWarmedUp.set(true);
+        //Empty prompt should just load a model
+        String prompt = "";
+        JsonObject body = new JsonObject();
+        body.addProperty("model", MODEL);
+        body.addProperty("prompt", prompt);
+        body.addProperty("stream", false);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(OLLAMA_URI)
+                        .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+                        .build();
+                HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
+            } catch (Exception e) {
+                if (ConfigLoader.config.modLogging) LOGGER.warn("LLM Warmup failed: {}", e.getMessage());
+            }
+        });
+    }
+
     // To LLM
     // Moderation
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
@@ -78,7 +109,7 @@ public final class LlmClient {
         body.addProperty("prompt", fullPrompt);
         body.addProperty("stream", false);
 
-        HttpRequest req = HttpRequest.newBuilder()
+        HttpRequest httpRequest = HttpRequest.newBuilder()
                 .uri(OLLAMA_URI)
                 .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
                 .header("Content-Type", "application/json")
@@ -92,7 +123,7 @@ public final class LlmClient {
 
         if (type.loggingEnabled) logToFile(filename, "[" + timestamp + "] Request:\n" + jsonBody);
 
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+        return HTTP.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
                         throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());

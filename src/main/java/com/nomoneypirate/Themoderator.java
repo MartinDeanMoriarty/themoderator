@@ -3,6 +3,7 @@ package com.nomoneypirate;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.commands.ModCommands;
+import com.nomoneypirate.llm.LlmClient;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +23,20 @@ public class Themoderator implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
+        // Let's log this glorious moment in time!
+        if (ConfigLoader.config.modLogging) LOGGER.info("Initializing The Moderator.");
+
         // Load configuration file
         ConfigLoader.loadConfig();
         // Load language file
         ConfigLoader.loadLang();
         // Register mod commands
         ModCommands.registerCommands();
-        //Register mod events
+        // Register mod events
         ModEvents.registerEvents();
-        //System.out.println(MOD_ID + " -Initialized.");
-        if (ConfigLoader.config.modLogging) LOGGER.info("Initialized.");
+        // Warmup the llm model
+        LlmClient.warmupModel();
+
     }
 
 }

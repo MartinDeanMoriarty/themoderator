@@ -7,7 +7,7 @@ public class ModConfig {
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
     public String model = "mistral-nemo";
-    // The "attention span" of the moderator
+    // The context size (attention span) of the moderator
     public Integer tokenLimit = 4000;
     // How much timeout in seconds
     public Integer connectionTimeout = 30;
@@ -18,7 +18,7 @@ public class ModConfig {
     public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
     // Request cooldown in seconds
     public Integer requestCooldown = 1;
-    // Is llm allowed to use BAN?
+    // Is moderator allowed to use BAN?
     public Boolean allowBanCommand = true;
     // Server with a whitelist should use this!
     public Boolean useWhitelist = true;

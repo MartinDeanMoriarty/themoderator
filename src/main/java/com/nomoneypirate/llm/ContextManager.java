@@ -24,11 +24,9 @@ public class ContextManager {
     public String buildPrompt(String type) {
         Deque<String> context = llmContexts.getOrDefault(type, new ArrayDeque<>());
         StringBuilder sb = new StringBuilder().append("\n\n");
-
         for (String msg : context) {
             sb.append(msg).append("\n");
         }
-
         return sb.toString().trim();
     }
 
