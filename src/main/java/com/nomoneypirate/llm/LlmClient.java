@@ -40,7 +40,7 @@ public final class LlmClient {
         SUMMARY((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.scheduleLogFilename, ConfigLoader.config.scheduleLogging);
 
         public interface PromptBuilder {
-            String build(String rules, String arg1);
+            String build(String rules, String arg);
         }
 
         final PromptBuilder builder;
@@ -53,24 +53,25 @@ public final class LlmClient {
             this.loggingEnabled = loggingEnabled;
         }
 
-        public String buildPrompt(String rules, String arg1) {
-            return builder.build(rules, arg1);
+        public String buildPrompt(String rules, String arg) {
+            return builder.build(rules, arg);
         }
     }
 
     // To LLM
     // Moderation
-    public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg1) {
-
-        // Build a prompt with token limit
-        String prompt = contextManager.buildPrompt("recall", arg1);
+    public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-
+        // Add to context manager (cache)
+        if (type == ModerationType.FEEDBACK || type == ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
+        // Build a prompt with token limit and context manager (cache)
+        //String prompt = contextManager.buildPrompt("recall", arg);
+        String prompt = contextManager.buildPrompt("recall");
         String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
-        // Add to context manager
-        if (type == ModerationType.FEEDBACK || type == ModerationType.MODERATION) contextManager.addMessage("recall",  arg1);
+        // Add to context manager (cache)
+        //if (type == ModerationType.FEEDBACK || type == ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
 
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);

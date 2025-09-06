@@ -16,6 +16,7 @@ import net.minecraft.item.Item;
 import net.minecraft.server.BannedPlayerEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -73,11 +74,12 @@ public class ModEvents {
                     feedback.append(ConfigLoader.lang.feedback_17);
                     // Search for lingering mob
                     if (searchModeratorAvatar(world)) {
+                        // Avatar (not)found message
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
                     }
                     // Only send if there is a feedback
-                     if (!feedback.isEmpty()) {
-                          
+                    // AND only send if it is a dedicated server
+                     if (!feedback.isEmpty() && server instanceof DedicatedServer) {
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback.toString())).thenAccept(dec -> applyDecision(server, dec));
                         //LlmClient.sendFeedbackAsync(feedback.toString()).thenAccept(dec -> applyDecision(server, dec));
                     }
@@ -109,7 +111,7 @@ public class ModEvents {
         // Intercept game messages to collect for the llm
         ServerMessageEvents.GAME_MESSAGE.register((server, text, params) -> {
             String content = text.getString();
-            // Add to messageBuffer
+            // Add to moderation scheduler
             String serverMessage = ConfigLoader.lang.feedback_48.formatted(content);
             ModerationScheduler.addMessage(serverMessage);
         });
@@ -121,7 +123,7 @@ public class ModEvents {
 
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
-            // Add to messageBuffer
+            // Add to moderation scheduler
             String chatMessage = ConfigLoader.lang.feedback_47.formatted(playerName, content);
             ModerationScheduler.addMessage(chatMessage);
 
