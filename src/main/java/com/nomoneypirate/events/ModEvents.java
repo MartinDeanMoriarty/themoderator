@@ -96,8 +96,7 @@ public class ModEvents {
 
             String welcomeText = ConfigLoader.lang.welcomeText.formatted(playerName);
             // Asynchronous to the LLM
-             
-            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(welcomeText)).thenAccept(decision -> {
+            LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText)).thenAccept(decision -> {
             //LlmClient.moderateAsync(playerName, welcomeText).thenAccept(decision -> {
                 // Back to the server thread
                 server.execute(() -> applyDecision(server, decision));
@@ -125,7 +124,7 @@ public class ModEvents {
             String content = message.getContent().getString();
 
             // Add Chat Messages to moderation scheduler
-            String chatMessage = ConfigLoader.lang.feedback_47.formatted(playerName, content);
+            String chatMessage = ConfigLoader.lang.feedback_47.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
             ModerationScheduler.addMessage(chatMessage);
 
             // Keyword-Check
@@ -141,7 +140,6 @@ public class ModEvents {
 
                 // Cooldown
                 cooldowns.put(playerName, now);
-
                 // Async-Request
                 LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> {
                 //LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {

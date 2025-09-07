@@ -65,15 +65,11 @@ public final class LlmClient {
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
         // Add to context manager (cache)
         if (type == ModerationType.FEEDBACK || type == ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
         // Build a prompt with token limit and context manager (cache)
-        //String prompt = contextManager.buildPrompt("recall", arg);
         String prompt = contextManager.buildPrompt("recall");
         String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
-        // Add to context manager (cache)
-        //if (type == ModerationType.FEEDBACK || type == ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
 
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);

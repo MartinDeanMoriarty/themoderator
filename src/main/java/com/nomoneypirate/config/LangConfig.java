@@ -52,10 +52,11 @@ public class LangConfig {
     public String feedback_44 = "Du hast ein Anfrage ignoriert. Das ist kein Fehler!";
     public String feedback_45 = "Du hast eine Nachricht: %s -an %s geschrieben.";
     public String feedback_46 = "Avatar schon vorhanden. Verwende WHEREIS!";
-    public String feedback_47 = "Neue Anfrage von Spieler: %s -Nachricht: %s";
+    public String feedback_47 = "Anfrage: %s";
     public String feedback_48 = "Server Nachricht: %s ";
     public String feedback_49 = "Feedback: %s";
     public String feedback_50 = "Zusammenfassung:  %s";
+    public String feedback_51 = "Spieler: %s -Nachricht: %s";
     // This is to format the system prompt
     public String systemPrompt = """
             System Regeln:
@@ -73,6 +74,12 @@ public class LangConfig {
             {"action": "IGNORE", "value": "", "value2": "", "value3": ""},
             {"action": "WHEREIS", "value": "AVATAR", "value2": "", "value3": ""},
             Beispiel Verkettung (llm-self-prompting):
+            Beispiel 1:
+             Anfrage: Begrüße den Spieler Player339.
+             {"action": "CHAT", "value": "Willkommen auf unserem Server, Player339!", "value2": "", "value3": ""}
+             Feedback: Du hast eine Nachricht: Willkommen auf unserem Server, Player339! - an Chat geschrieben.
+             {"action": "STOPCHAIN", "value": "", "value2": "", "value3": ""}
+            Beispiel 2:
              {"action": "SPAWNAVATAR", "value": "OVERWORLD", "value2": "COW", "value3": "10 -10"}
             -Feedback auswerten!
              {"action": "GOTOPLAYER", "value": "Player123", "value2": "", "value3": ""}
@@ -112,8 +119,8 @@ public class LangConfig {
             Hinweise:
             - Du musst Aktionen logisch verketten (llm-self-prompting)!
             - Du kannst die Verkettung (llm-self-prompting) NUR mit "STOPCHAIN" unterbrechen! ALLE anderen Aktionen liefern ein Feedback!
+            - Verwende "IGNORE" um Feedback oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
             - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Jegliche Antwort auf eine Zusammenfassung ohne ersichtlichen Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich "IGNORE"!
-            - Verwende "IGNORE" um Nachrichten oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
             - Spawne deinen Avatar um mit Spielern zu interargieren.
             - Koordinaten sind im Format "x z", z.B. "10 -10", Oberfläche wird automatisch berechnet.
             - Verwende keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
