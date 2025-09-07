@@ -23,9 +23,6 @@ public class Themoderator implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-        // Let's log this glorious moment in time!
-        if (ConfigLoader.config.modLogging) LOGGER.info("Initializing The Moderator.");
-
         // Load configuration file
         ConfigLoader.loadConfig();
         // Load language file
@@ -36,6 +33,9 @@ public class Themoderator implements ModInitializer {
         ModEvents.registerEvents();
         // Warmup the llm model
         LlmClient.warmupModel();
+
+        // Let's log this glorious moment in time!
+        if (ConfigLoader.config.modLogging) LOGGER.info("Initializing The Moderator.");
 
     }
 

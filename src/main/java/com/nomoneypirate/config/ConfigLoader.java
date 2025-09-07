@@ -32,7 +32,7 @@ public class ConfigLoader {
                 return new Gson().fromJson(json, clazz);
             }
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("{}: {}", errorMessage, e.getMessage());
+            if (config.modLogging) LOGGER.error("{}: {}", errorMessage, e.getMessage());
             return defaultInstance;
         }
     }
