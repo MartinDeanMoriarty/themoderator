@@ -13,12 +13,13 @@ public class ConfigLoader {
     public static LangConfig lang;
 
     public static void loadConfig() {
-        Path configPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator.json");
+        Path configPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator/config.json");
         config = load(configPath, ModConfig.class, new ModConfig(), "[themoderator] Error loading config file");
     }
 
     public static void loadLang() {
-        Path langPath = FabricLoader.getInstance().getConfigDir().resolve(config.languageFileName + ".json");
+        if (config == null) config = new ModConfig(); // In case themoderator.json does not exist
+        Path langPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator/"+config.languageFileName + ".json");
         lang = load(langPath, LangConfig.class, new LangConfig(), "[themoderator] Error loading language file");
     }
 
@@ -38,6 +39,7 @@ public class ConfigLoader {
     }
 
     private static void save(Path path, Object cl) throws IOException {
+        Files.createDirectories(path.getParent()); // Make sure path exist
         String json = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(cl);
         Files.writeString(path, json);
     }

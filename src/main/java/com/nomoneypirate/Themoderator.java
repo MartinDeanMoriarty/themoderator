@@ -4,6 +4,7 @@ import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.commands.ModCommands;
 import com.nomoneypirate.llm.LlmClient;
+import com.nomoneypirate.locations.LocationManager;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,8 @@ public class Themoderator implements ModInitializer {
         ModEvents.registerEvents();
         // Warmup the llm model
         LlmClient.warmupModel();
+        // Load Locations
+        LocationManager.loadLocations();
 
         // Let's log this glorious moment in time!
         if (ConfigLoader.config.modLogging) LOGGER.info("Initializing The Moderator.");

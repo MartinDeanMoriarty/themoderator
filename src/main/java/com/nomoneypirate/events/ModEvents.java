@@ -8,6 +8,8 @@ import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.llm.ModerationScheduler;
+import com.nomoneypirate.locations.Location;
+import com.nomoneypirate.locations.LocationManager;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -22,10 +24,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -310,8 +309,14 @@ public class ModEvents {
             }
 
             case FEEDBACK -> {
-                String feedback = decision.value();
                 // Feedback
+                String feedback = decision.value();
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case SERVERRULES -> {
+                // Feedback
+                String feedback = ConfigLoader.lang.serverRules;
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
             }
 
@@ -399,7 +404,127 @@ public class ModEvents {
                 }
             }
 
-            case WHISPER, WARN, KICK, BAN, FOLLOWPLAYER, LOOKATPLAYER, GOTOPLAYER, MOVEAROUND -> {
+            case MOVEAROUND -> {
+                String feedback;
+                if (ModActions.startMoveAround((ServerWorld) currentAvatarWorld, currentAvatarId, Double.parseDouble(decision.value()))) {
+                    feedback = ConfigLoader.lang.feedback_25.formatted(decision.value());
+                } else {
+                    feedback = ConfigLoader.lang.feedback_18;
+                }
+                // Feedback
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case LISTLOCATIONS -> {
+                String feedback;
+
+                try {
+                    List<Location> locations = LocationManager.listLocations();
+
+                    if (locations.isEmpty()) {
+                        feedback = ConfigLoader.lang.feedback_58; // No Locations
+                    } else {
+                        String locationList = locations.stream()
+                                .map(loc -> loc.name + " (" + loc.x + ", " + loc.z + ")")
+                                .collect(Collectors.joining(", "));
+
+                        feedback = ConfigLoader.lang.feedback_52.formatted(locationList); // All Locations
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("[themoderator] Error listing locations: {}", e.getMessage());
+                    feedback = ConfigLoader.lang.feedback_02; // error
+                }
+
+                LlmClient.moderateAsync(
+                        LlmClient.ModerationType.FEEDBACK,
+                        ConfigLoader.lang.feedback_49.formatted(feedback)
+                ).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case GETLOCATION -> {
+                String locationName = decision.value();
+                String feedback;
+
+                try {
+                    Location loc = LocationManager.getLocation(locationName);
+
+                    if (loc == null) {
+                        feedback = ConfigLoader.lang.feedback_56.formatted(locationName); // No Location
+                    } else {
+                        String locationInfo = loc.name + " (" + loc.x + ", " + loc.z + ")";
+                        feedback = ConfigLoader.lang.feedback_53.formatted(loc.name, loc.dim, loc.x, loc.z); // Output
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("[themoderator] Error getting location '{}': {}", locationName, e.getMessage());
+                    feedback = ConfigLoader.lang.feedback_02;
+                }
+
+                LlmClient.moderateAsync(
+                        LlmClient.ModerationType.FEEDBACK,
+                        ConfigLoader.lang.feedback_49.formatted(feedback)
+                ).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case SETLOCATION -> {
+                String feedback;
+                double posX = 0;
+                double posZ = 0;
+                boolean validCoords = false;
+
+                try {
+                    // Koordinaten parsen
+                    if (!decision.value().isEmpty()) {
+                        String[] parts = decision.value().trim().split("\\s+");
+                        if (parts.length == 2) {
+                            posX = Double.parseDouble(parts[0]);
+                            posZ = Double.parseDouble(parts[1]);
+                            validCoords = true;
+                        } else {
+                            if (ConfigLoader.config.modLogging)
+                                LOGGER.warn("Parts length problem: ModEvent.java -> case SETLOCATION");
+                        }
+                    }
+
+                    if (validCoords && !decision.value2().isEmpty()) {
+                        LocationManager.setLocation(decision.value(), decision.value2(), (int) posX, (int) posZ);
+                        feedback = ConfigLoader.lang.feedback_54.formatted(decision.value2()); // Saved
+                    } else {
+                        feedback = ConfigLoader.lang.feedback_59.formatted(decision.value2()); // Error
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("[themoderator] Error setting location '{}': {}", decision.value2(), e.getMessage());
+                    feedback = ConfigLoader.lang.feedback_60.formatted(decision.value2()); // Error
+                }
+
+                LlmClient.moderateAsync(
+                        LlmClient.ModerationType.FEEDBACK,
+                        ConfigLoader.lang.feedback_49.formatted(feedback)
+                ).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case REMLOCATION -> {
+                String locationName = decision.value();
+                String feedback;
+
+                try {
+                    boolean removed = LocationManager.remLocation(locationName);
+                    if (removed) {
+                        feedback = ConfigLoader.lang.feedback_55.formatted(locationName); // Erfolgreich gelöscht
+                    } else {
+                        feedback = ConfigLoader.lang.feedback_56.formatted(locationName); // Nicht gefunden oder nicht gelöscht
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("[themoderator] Error removing location '{}': {}", locationName, e.getMessage());
+                    feedback = ConfigLoader.lang.feedback_57.formatted(locationName); // Fehler beim Löschen
+                }
+
+                LlmClient.moderateAsync(
+                        LlmClient.ModerationType.FEEDBACK,
+                        ConfigLoader.lang.feedback_49.formatted(feedback)
+                ).thenAccept(dec -> applyDecision(server, dec));
+            }
+
+            case WHISPER, WARN, KICK, BAN, FOLLOWPLAYER, LOOKATPLAYER, GOTOPLAYER -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
@@ -456,17 +581,6 @@ public class ModEvents {
 
                     case GOTOPLAYER -> {
                         String feedback = ModActions.startGotoPlayer((ServerWorld) currentAvatarWorld, currentAvatarId, decision.value());
-                        // Feedback
-                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                    }
-
-                    case MOVEAROUND -> {
-                        String feedback;
-                        if (ModActions.startMoveAround((ServerWorld) currentAvatarWorld, currentAvatarId, Double.parseDouble(decision.value()))) {
-                            feedback = ConfigLoader.lang.feedback_25.formatted(decision.value());
-                        } else {
-                            feedback = ConfigLoader.lang.feedback_18;
-                        }
                         // Feedback
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                     }

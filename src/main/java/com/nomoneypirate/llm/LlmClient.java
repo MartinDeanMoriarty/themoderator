@@ -134,6 +134,7 @@ public final class LlmClient {
                 case "BAN" -> ModerationDecision.Action.BAN;
                 case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
                 case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
+                case "SERVERRULES" -> ModerationDecision.Action.SERVERRULES;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
                 case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORTPLAYER;
@@ -151,6 +152,10 @@ public final class LlmClient {
                 case "GIVEPLAYER" -> ModerationDecision.Action.GIVEPLAYER;
                 case "CHANGEWEATHER" -> ModerationDecision.Action.CHANGEWEATHER;
                 case "CHANGETIME" -> ModerationDecision.Action.CHANGETIME;
+                case "LISTLOCATIONS" -> ModerationDecision.Action.LISTLOCATIONS;
+                case "GETLOCATION" -> ModerationDecision.Action.GETLOCATION;
+                case "SETLOCATION" -> ModerationDecision.Action.SETLOCATION;
+                case "REMLOCATION" -> ModerationDecision.Action.REMLOCATION;
                 case "STOPACTION" -> ModerationDecision.Action.STOPACTION;
                 case "STOPCHAIN" -> ModerationDecision.Action.STOPCHAIN;
                 default -> ModerationDecision.Action.IGNORE;

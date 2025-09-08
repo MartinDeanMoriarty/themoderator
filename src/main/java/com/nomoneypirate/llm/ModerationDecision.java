@@ -10,6 +10,7 @@ public record ModerationDecision(Action action, String value, String value2, Str
         IGNORE,
         WHEREIS,
         FEEDBACK,
+        SERVERRULES,
         PLAYERLIST,
         TELEPORTPLAYER,
         TELEPORTPOSITION,
@@ -26,6 +27,10 @@ public record ModerationDecision(Action action, String value, String value2, Str
         GIVEPLAYER,
         CHANGEWEATHER,
         CHANGETIME,
+        LISTLOCATIONS,
+        GETLOCATION,
+        SETLOCATION,
+        REMLOCATION,
         STOPACTION,
         STOPCHAIN
     }
