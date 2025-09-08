@@ -154,6 +154,7 @@ public class ModEvents {
 
     // Apply the decisions and translate them into actions
     public static void applyDecision(MinecraftServer server, ModerationDecision decision) {
+        final String[] split = decision.value().trim().split("\\s+");
         switch (decision.action()) {
 
             case IGNORE -> {
@@ -326,11 +327,10 @@ public class ModEvents {
                 double posZ = 0;
 
                 if (!decision.value().isEmpty()) {
-                    String[] parts = decision.value().trim().split("\\s+");
-                    if (parts.length == 2) {
+                    if (split.length == 2) {
                         try {
-                            posX = Integer.parseInt(parts[0]);
-                            posZ = Integer.parseInt(parts[1]);
+                            posX = Integer.parseInt(split[0]);
+                            posZ = Integer.parseInt(split[1]);
                         } catch (NumberFormatException e) {
                             if (ConfigLoader.config.modLogging) LOGGER.error("NumberFormatException: ModEvent.java -> case GOTOPOSITION {}", String.valueOf(e));
                         }
@@ -451,7 +451,6 @@ public class ModEvents {
                     if (loc == null) {
                         feedback = ConfigLoader.lang.feedback_56.formatted(locationName); // No Location
                     } else {
-                        String locationInfo = loc.name + " (" + loc.x + ", " + loc.z + ")";
                         feedback = ConfigLoader.lang.feedback_53.formatted(loc.name, loc.dim, loc.x, loc.z); // Output
                     }
                 } catch (Exception e) {
@@ -474,10 +473,9 @@ public class ModEvents {
                 try {
                     // Koordinaten parsen
                     if (!decision.value().isEmpty()) {
-                        String[] parts = decision.value().trim().split("\\s+");
-                        if (parts.length == 2) {
-                            posX = Double.parseDouble(parts[0]);
-                            posZ = Double.parseDouble(parts[1]);
+                        if (split.length == 2) {
+                            posX = Double.parseDouble(split[0]);
+                            posZ = Double.parseDouble(split[1]);
                             validCoords = true;
                         } else {
                             if (ConfigLoader.config.modLogging)
