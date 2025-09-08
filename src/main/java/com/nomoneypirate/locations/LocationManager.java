@@ -29,15 +29,16 @@ public class LocationManager {
             Files.createDirectories(locationPath.getParent());
             if (!Files.exists(locationPath)) {
                 saveLocations(); // Make sure there is a file to save to
+                // Log this!
             } else {
                 String json = Files.readString(locationPath);
                 Type type = new TypeToken<Map<String, Location>>() {}.getType();
                 Map<String, Location> loaded = new Gson().fromJson(json, type);
                 locations.clear();
                 locations.putAll(loaded);
-                // Log this!
-                if (ConfigLoader.config.modLogging) LOGGER.info("Locations Initialized.");
             }
+            // Log this!
+            if (ConfigLoader.config.modLogging) LOGGER.info("Locations Initialized.");
         } catch (IOException e) {
             if (ConfigLoader.config.modLogging) LOGGER.error("[themoderator] Error loading locations: {}", e.getMessage());
         }

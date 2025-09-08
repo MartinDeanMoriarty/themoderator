@@ -38,7 +38,7 @@ public class Themoderator implements ModInitializer {
         LocationManager.loadLocations();
 
         // Let's log this glorious moment in time!
-        if (ConfigLoader.config.modLogging) LOGGER.info("Initializing The Moderator.");
+        if (ConfigLoader.config.modLogging) LOGGER.info("Initialized.");
 
     }
 

@@ -85,8 +85,6 @@ public class ModEvents {
                     checked = true;
                 }
             }
-            // Log this!
-            if (ConfigLoader.config.modLogging) LOGGER.info("Events Initialized.");
         });
 
         // Intercept player join messages (server-side)
@@ -151,7 +149,8 @@ public class ModEvents {
                 });
             }
         });
-
+        // Log this!
+        if (ConfigLoader.config.modLogging) LOGGER.info("Events Initialized.");
     }
 
     // Apply the decisions and translate them into actions

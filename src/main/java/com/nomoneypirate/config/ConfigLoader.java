@@ -30,8 +30,6 @@ public class ConfigLoader {
                 return defaultInstance;
             } else {
                 String json = Files.readString(path);
-                // Log this!
-                if (ConfigLoader.config.modLogging) LOGGER.info("{} Initialized.", clazz);
                 return new Gson().fromJson(json, clazz);
             }
         } catch (IOException e) {

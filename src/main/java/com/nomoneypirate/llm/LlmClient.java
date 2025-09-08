@@ -186,6 +186,8 @@ public final class LlmClient {
             return;
         }
         isWarmedUp.set(true);
+        // Log this!
+        if (ConfigLoader.config.modLogging) LOGGER.info("Model warm-up!");
         // An empty prompt should just load a model
         String prompt = "";
         JsonObject body = new JsonObject();
@@ -202,8 +204,6 @@ public final class LlmClient {
                         .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                         .build();
                 HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
-                // Log this!
-                if (ConfigLoader.config.modLogging) LOGGER.info("Model warm-up!");
             } catch (Exception e) {
                 if (ConfigLoader.config.modLogging) LOGGER.warn("LLM Warmup failed: {}", e.getMessage());
             }
