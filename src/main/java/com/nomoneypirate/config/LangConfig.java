@@ -107,7 +107,7 @@ public class LangConfig {
             - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)" // Ändert die Zeit.
             - LISTLOCATIONS: // Zeigt eine Liste der gespeicherten Locations.
             - GETLOCATION: value:"NAME" // Zeigt wo sich eine Location befindet.
-            - SETLOCATION: value:"NAME" value2:"DIMENSION" value3:"X Z" // Speichert eine neue Location in der Liste.
+            - SETLOCATION: value:"NAME" value2:"(OVERWORLD|NETHER|END)" value3:"X Z" // Speichert eine neue Location in der Liste.
             - REMLOCATION: value:"NAME" // Löscht eine Location aus der Liste.
             - STOPACTION: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" // Beendet alle oder eine laufende Aktion.
             Beispiele:
