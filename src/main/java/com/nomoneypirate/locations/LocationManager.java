@@ -35,6 +35,8 @@ public class LocationManager {
                 Map<String, Location> loaded = new Gson().fromJson(json, type);
                 locations.clear();
                 locations.putAll(loaded);
+                // Log this!
+                if (ConfigLoader.config.modLogging) LOGGER.info("Locations Initialized.");
             }
         } catch (IOException e) {
             if (ConfigLoader.config.modLogging) LOGGER.error("[themoderator] Error loading locations: {}", e.getMessage());

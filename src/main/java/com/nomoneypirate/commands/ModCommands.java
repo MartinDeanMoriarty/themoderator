@@ -22,11 +22,12 @@ public class ModCommands {
                                     // Load language file
                                     ConfigLoader.loadLang();
                                     context.getSource().sendFeedback(() -> Text.literal("Configuration Files Reloaded."), false);
-                                    LOGGER.info("Configuration Files Reloaded.");
+                                    if (ConfigLoader.config.modLogging) LOGGER.info("Configuration Files Reloaded.");
                                     return 1;
                                 })
                 )
         );
-
+        // Log this!
+        if (ConfigLoader.config.modLogging) LOGGER.info("Commands Initialized.");
     }
 }
