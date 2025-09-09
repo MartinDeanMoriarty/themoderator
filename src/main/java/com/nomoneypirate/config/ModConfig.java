@@ -6,9 +6,9 @@ public class ModConfig {
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
-    public String model = "mistral-nemo";
+    public String model = "mistral";
     // The context size (attention span) of the moderator
-    public Integer tokenLimit = 4000;
+    public Integer tokenLimit = 4096;
     // How much timeout in seconds
     public Integer connectionTimeout = 30;
     public Integer responseTimeout = 30;

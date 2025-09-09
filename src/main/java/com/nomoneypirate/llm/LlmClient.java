@@ -189,7 +189,7 @@ public final class LlmClient {
         // Log this!
         if (ConfigLoader.config.modLogging) LOGGER.info("Model warm-up!");
         // An empty prompt should just load a model
-        String prompt = "";
+        String prompt = " ";
         JsonObject body = new JsonObject();
         body.addProperty("model", MODEL);
         body.addProperty("prompt", prompt);
