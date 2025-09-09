@@ -11,8 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -23,18 +21,25 @@ import com.google.gson.*;
 public final class LlmClient {
 
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(ConfigLoader.config.connectionTimeout))
-            .build();
+
     private static final Gson GSON = new GsonBuilder().create();
     // Set model name + prompts
     private static final String MODEL = ConfigLoader.config.model; // Ollama-Model
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
-    private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     // Set llm model token limit
     static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
-    // Make a hard decision
+    // Warm up
     private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
+
+    private static final LlmProvider PROVIDER;
+
+    static {
+        if (ConfigLoader.config.useOpenAi) {
+            PROVIDER = new OpenAiProvider();
+        } else {
+            PROVIDER = new OllamaProvider();
+        }
+    }
 
     // We have different situations so let's react to them
     public enum ModerationType {
@@ -61,50 +66,12 @@ public final class LlmClient {
         }
     }
 
-    // To LLM
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
-
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        // Add to context manager (cache)
-        if (type == ModerationType.FEEDBACK || type == ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
-        // Build a prompt with token limit and context manager (cache)
-        String prompt = contextManager.buildPrompt("recall");
-        String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
-
-        JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
-        body.addProperty("prompt", fullPrompt);
-        body.addProperty("stream", false);
-
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                .build();
-
-        String jsonBody = GSON.toJson(body);
-        String filename = type.logFilenamePrefix + (type == ModerationType.SUMMARY
-                ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".log"
-                : ".log");
-
-        if (type.loggingEnabled) logToFile(filename, "[" + timestamp + "] Request:\n" + jsonBody);
-
-        return HTTP.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                .thenApply(resp -> {
-                    if (resp.statusCode() / 100 != 2) {
-                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
-                    }
-                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String responseText = json.get("response").getAsString().trim();
-                    if (type.loggingEnabled) logToFile(filename, "[" + timestamp + "] Response:\n" + responseText);
-                    return parseDecision(responseText);
-                });
-
+        return PROVIDER.moderateAsync(type, arg);
     }
 
     // Parse response
-    private static ModerationDecision parseDecision(String responseText) {
+    static ModerationDecision parseDecision(String responseText) {
         String value = "";
         String value2 = "";
         String value3 = "";

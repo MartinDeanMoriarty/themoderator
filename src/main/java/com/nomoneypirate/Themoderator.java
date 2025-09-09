@@ -4,6 +4,8 @@ import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.commands.ModCommands;
 import com.nomoneypirate.llm.LlmClient;
+import com.nomoneypirate.llm.OllamaProvider;
+import com.nomoneypirate.llm.OpenAiProvider;
 import com.nomoneypirate.locations.LocationManager;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -32,8 +34,10 @@ public class Themoderator implements ModInitializer {
         ModCommands.registerCommands();
         // Register mod events
         ModEvents.registerEvents();
-        // Warmup the llm model
-        LlmClient.warmupModel();
+        // Warmup ollama model
+        if (!ConfigLoader.config.useOpenAi) {
+            LlmClient.warmupModel();
+        }
         // Load Locations
         LocationManager.loadLocations();
 

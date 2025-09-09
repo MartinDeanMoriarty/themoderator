@@ -6,8 +6,16 @@ public class ModConfig {
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
-    public String model = "mistral";
-    // The context size (attention span) of the moderator
+    public String model = "mistral-nemo";
+    // OpenAi endpoint
+    public Boolean useOpenAi = false;
+    // Usually no change needed.
+    public String OpenAiURI = "https://api.openai.com/v1/chat/completions";
+    // OpenAi api-key
+    public String openAiApiKey = "?";
+    //OpenAi model
+    public String openAiModel = "gpt-4";
+    // The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds
     public Integer connectionTimeout = 30;
