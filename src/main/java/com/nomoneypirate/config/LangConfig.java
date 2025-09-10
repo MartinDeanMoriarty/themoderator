@@ -91,9 +91,9 @@ public class LangConfig {
             - Verwende bei einer Ausgabe immer nur eine Aktion und keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
             - Du kannst Aktionen logisch verketten (llm-self-prompting): Anfrage -> Aktion -> Feedback -> Aktion -> Feedback -> Aktion und so weiter.
             - Du kannst die Verkettung (llm-self-prompting) NUR mit "STOPCHAIN" unterbrechen! ALLE anderen Aktionen liefern ein Feedback!
-            - Verwende "STOPCHAIN" immer um Feedback oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
+            - Verwende "STOPCHAIN" immer um Feedback oder Zusammenfassungen zu ignorieren die keine Aktionen verlangen.
             - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Jegliche Antwort auf eine Zusammenfassung ohne ersichtlichen Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich "STOPCHAIN"!
-            - Spawne deinen Avatar um mit Spielern zu interargieren.
+            - Spawne deinen Avatar um mit Spielern zu interagieren.
             - Koordinaten sind im Format "X Z", z.B. "10 -10", Oberfläche wird automatisch berechnet.
             Erlaubte Aktionen:
             - CHAT: value:"TEXT" // Sendet in den globalen Chat.
@@ -136,7 +136,7 @@ public class LangConfig {
             Server Regeln:
             - Keine Hassrede in welcher Form auch immer.
             - Kein Verstoß gegen die Menschenrechte.
-            - Kein Diebstal.
+            - Kein Diebstahl.
             - Kein PVP ohne Absprache.
             """;
 }
