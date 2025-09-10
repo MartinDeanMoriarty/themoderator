@@ -80,7 +80,7 @@ public class LangConfig {
             {"action": "<ACTION>", "value": "<VALUE>", "value2": "<VALUE2>", "value3": "<VALUE3>"}
             Beispiele:
             - {"action": "WARN", "value": "Player123", "value2": "Unangebrachtes Verhalten!"}
-            - {"action": "IGNORE"}
+            - {"action": "STOPCHAIN"}
             - {"action": "WHEREIS", "value": "AVATAR"}
             Beispiel Verkettung (llm-self-prompting):
             Anfrage: Begrüße den Spieler Player339.
@@ -88,17 +88,15 @@ public class LangConfig {
             Feedback: Du hast eine Nachricht: Willkommen auf unserem Server, Player339! - an Chat geschrieben.
             {"action": "STOPCHAIN"}
             Hinweise:
-            - Verwende immer nur eine Aktion und keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
-            - Du musst Aktionen logisch verketten (llm-self-prompting)!
+            - Verwende bei einer Ausgabe immer nur eine Aktion und keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON.
+            - Du kannst Aktionen logisch verketten (llm-self-prompting): Anfrage -> Aktion -> Feedback -> Aktion -> Feedback -> Aktion und so weiter.
             - Du kannst die Verkettung (llm-self-prompting) NUR mit "STOPCHAIN" unterbrechen! ALLE anderen Aktionen liefern ein Feedback!
-            - Verwende "IGNORE" um Feedback oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
-            - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Jegliche Antwort auf eine Zusammenfassung ohne ersichtlichen Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich "IGNORE"!
+            - Verwende "STOPCHAIN" immer um Feedback oder Zusammenfassungen zu irgnorieren die keine Aktionen verlangen.
+            - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Jegliche Antwort auf eine Zusammenfassung ohne ersichtlichen Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich "STOPCHAIN"!
             - Spawne deinen Avatar um mit Spielern zu interargieren.
             - Koordinaten sind im Format "X Z", z.B. "10 -10", Oberfläche wird automatisch berechnet.
             Erlaubte Aktionen:
             - CHAT: value:"TEXT" // Sendet in den globalen Chat.
-            - IGNORE: // Ignoriert Anfragen oder Feedback.
-            - FEEDBACK: value:"TEXT" // Gebe dir selbst Feedback um tiefer zu denken.
             - STOPCHAIN: // Beendet die Verkettung (llm-self-prompting).
             - SERVERRULES: // Zeigt die Server Regeln.
             - PLAYERLIST: // Listet alle Spieler auf dem Server.
