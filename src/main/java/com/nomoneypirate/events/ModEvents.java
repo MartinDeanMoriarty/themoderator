@@ -150,7 +150,7 @@ public class ModEvents {
             }
         });
         // Log this!
-        if (ConfigLoader.config.modLogging) LOGGER.info("Events Initialized.");
+        if (ConfigLoader.config.modLogging) LOGGER.info("4of5 Events Initialized.");
     }
 
     // Apply the decisions and translate them into actions

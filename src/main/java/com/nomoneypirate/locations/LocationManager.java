@@ -38,7 +38,7 @@ public class LocationManager {
                 locations.putAll(loaded);
             }
             // Log this!
-            if (ConfigLoader.config.modLogging) LOGGER.info("Locations Initialized.");
+            if (ConfigLoader.config.modLogging) LOGGER.info("5of5 Locations Initialized.");
         } catch (IOException e) {
             if (ConfigLoader.config.modLogging) LOGGER.error("[themoderator] Error loading locations: {}", e.getMessage());
         }

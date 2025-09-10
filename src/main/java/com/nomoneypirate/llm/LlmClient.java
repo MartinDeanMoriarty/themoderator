@@ -152,7 +152,7 @@ public final class LlmClient {
         }
         isWarmedUp.set(true);
         // Log this!
-        if (ConfigLoader.config.modLogging) LOGGER.info("Model warm-up!");
+        if (ConfigLoader.config.modLogging) LOGGER.info("Ollama warm-up!");
         // An empty prompt should just load a model
         String prompt = " ";
         JsonObject body = new JsonObject();
@@ -170,7 +170,7 @@ public final class LlmClient {
                         .build();
                 HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
             } catch (Exception e) {
-                if (ConfigLoader.config.modLogging) LOGGER.warn("LLM Warmup failed: {}", e.getMessage());
+                if (ConfigLoader.config.modLogging) LOGGER.warn("Ollama Warmup failed: {}", e.getMessage());
             }
         });
     }

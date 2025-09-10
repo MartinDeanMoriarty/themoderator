@@ -28,6 +28,6 @@ public class ModCommands {
                 )
         );
         // Log this!
-        if (ConfigLoader.config.modLogging) LOGGER.info("Commands Initialized.");
+        if (ConfigLoader.config.modLogging) LOGGER.info("3of5 Commands Initialized.");
     }
 }

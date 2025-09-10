@@ -15,12 +15,14 @@ public class ConfigLoader {
     public static void loadConfig() {
         Path configPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator/config.json");
         config = load(configPath, ModConfig.class, new ModConfig(), "[themoderator] Error loading config file");
+        if (config.modLogging) LOGGER.info("1of5 Config Initialized.");
     }
 
     public static void loadLang() {
-        if (config == null) config = new ModConfig(); // In case themoderator.json does not exist
+        if (config == null) config = new ModConfig(); // In case config does not exist
         Path langPath = FabricLoader.getInstance().getConfigDir().resolve("themoderator/"+config.languageFileName + ".json");
         lang = load(langPath, LangConfig.class, new LangConfig(), "[themoderator] Error loading language file");
+        if (config.modLogging) LOGGER.info("2of5 Language Initialized.");
     }
 
     private static <T> T load(Path path, Class<T> clazz, T defaultInstance, String errorMessage) {
