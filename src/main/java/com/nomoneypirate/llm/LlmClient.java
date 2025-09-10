@@ -20,18 +20,14 @@ import com.google.gson.*;
 
 public final class LlmClient {
 
-    private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
-
-    private static final Gson GSON = new GsonBuilder().create();
-    // Set model name + prompts
-    private static final String MODEL = ConfigLoader.config.model; // Ollama-Model
+    private static final LlmProvider PROVIDER;
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
-    // Set llm model token limit
-    static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
+    private static final Gson GSON = new GsonBuilder().create();
+
     // Warm up
     private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
-
-    private static final LlmProvider PROVIDER;
+    private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
+    private static final String MODEL = ConfigLoader.config.model;
 
     static {
         if (ConfigLoader.config.useOpenAi) {
@@ -43,6 +39,7 @@ public final class LlmClient {
 
     // We have different situations so let's react to them
     public enum ModerationType {
+
         MODERATION((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
         FEEDBACK((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
         SUMMARY((rules, a) -> SYSTEM_PROMPT.formatted(rules, a), ConfigLoader.config.scheduleLogFilename, ConfigLoader.config.scheduleLogging);
@@ -64,6 +61,7 @@ public final class LlmClient {
         public String buildPrompt(String rules, String arg) {
             return builder.build(rules, arg);
         }
+
     }
 
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
@@ -146,7 +144,7 @@ public final class LlmClient {
         return "{}";
     }
 
-    // Used at mod init so the llm has a chance to be ready when the world is loaded
+    // Used at mod init so ollama has a chance to be ready when the world is loaded
     public static void warmupModel() {
         if (isWarmedUp.get()) {
             CompletableFuture.completedFuture(null);
