@@ -14,7 +14,7 @@ public class ModConfig {
     // OpenAi api-key
     public String openAiApiKey = "?";
     //OpenAi model
-    public String openAiModel = "gpt-4";
+    public String openAiModel = "gpt-4.1";
     // The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds
