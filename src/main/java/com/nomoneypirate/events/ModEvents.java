@@ -432,7 +432,7 @@ public class ModEvents {
                         feedback = ConfigLoader.lang.feedback_52.formatted(locationList); // All Locations
                     }
                 } catch (Exception e) {
-                    LOGGER.error("[themoderator] Error listing locations: {}", e.getMessage());
+                    if (ConfigLoader.config.modLogging) LOGGER.error("Error listing locations: {}", e.getMessage());
                     feedback = ConfigLoader.lang.feedback_02; // error
                 }
 
@@ -455,7 +455,7 @@ public class ModEvents {
                         feedback = ConfigLoader.lang.feedback_53.formatted(loc.name, loc.dim, loc.x, loc.z); // Output
                     }
                 } catch (Exception e) {
-                    LOGGER.error("[themoderator] Error getting location '{}': {}", locationName, e.getMessage());
+                    if (ConfigLoader.config.modLogging) LOGGER.error("Error getting location '{}': {}", locationName, e.getMessage());
                     feedback = ConfigLoader.lang.feedback_02;
                 }
 
@@ -479,8 +479,7 @@ public class ModEvents {
                             posZ = Double.parseDouble(split[1]);
                             validCoords = true;
                         } else {
-                            if (ConfigLoader.config.modLogging)
-                                LOGGER.warn("Parts length problem: ModEvent.java -> case SETLOCATION");
+                            if (ConfigLoader.config.modLogging) LOGGER.warn("Parts length problem: ModEvent.java -> case SETLOCATION");
                         }
                     }
 
@@ -491,7 +490,7 @@ public class ModEvents {
                         feedback = ConfigLoader.lang.feedback_59.formatted(decision.value2()); // Error
                     }
                 } catch (Exception e) {
-                    LOGGER.error("[themoderator] Error setting location '{}': {}", decision.value2(), e.getMessage());
+                    if (ConfigLoader.config.modLogging) LOGGER.error("Error setting location '{}': {}", decision.value2(), e.getMessage());
                     feedback = ConfigLoader.lang.feedback_60.formatted(decision.value2()); // Error
                 }
 
@@ -513,7 +512,7 @@ public class ModEvents {
                         feedback = ConfigLoader.lang.feedback_56.formatted(locationName); // Nicht gefunden oder nicht gelöscht
                     }
                 } catch (Exception e) {
-                    LOGGER.error("[themoderator] Error removing location '{}': {}", locationName, e.getMessage());
+                    if (ConfigLoader.config.modLogging) LOGGER.error("Error removing location '{}': {}", locationName, e.getMessage());
                     feedback = ConfigLoader.lang.feedback_57.formatted(locationName); // Fehler beim Löschen
                 }
 

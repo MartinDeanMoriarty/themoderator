@@ -40,7 +40,7 @@ public class LocationManager {
             // Log this!
             if (ConfigLoader.config.modLogging) LOGGER.info("5of5 Locations Initialized.");
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("[themoderator] Error loading locations: {}", e.getMessage());
+            if (ConfigLoader.config.modLogging) LOGGER.error("5of5 Error loading locations: {}", e.getMessage());
         }
     }
 
@@ -51,7 +51,7 @@ public class LocationManager {
                     .toJson(locations);
             Files.writeString(locationPath, json);
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("[themoderator] Error saving locations: {}", e.getMessage());
+            if (ConfigLoader.config.modLogging) LOGGER.error("Error saving locations: {}", e.getMessage());
         }
     }
 
