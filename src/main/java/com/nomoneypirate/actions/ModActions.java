@@ -266,7 +266,7 @@ public class ModActions {
         if (path != null && path.reachesTarget()) {
             // Goto goal
             goalSelector.add(1, new GotoPlayerGoal(mob, player, 1.0));
-            return  ConfigLoader.lang.feedback_24.formatted(playerName);
+            return ConfigLoader.lang.feedback_24.formatted(playerName);
         } else {
             // No path, unreachable.
             return  ConfigLoader.lang.feedback_27.formatted(playerName);

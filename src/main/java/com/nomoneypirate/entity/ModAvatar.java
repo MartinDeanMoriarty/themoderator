@@ -31,10 +31,6 @@ public class ModAvatar {
     public static World currentAvatarWorld = null;
 
     // Search for a "lost" Avatar (used at server startup).
-    // This may happen when the server shuts down for some reason
-    // and a mob with the name "The Moderator" may still exist.
-    // In this case we simply "register" the mob as the new Avatar
-    // Only possible if the mob had a chunk loader
     public static boolean searchModeratorAvatar(ServerWorld world) {
         boolean found = false;
         // Search Mob named "The Moderator"
@@ -45,7 +41,6 @@ public class ModAvatar {
                 currentAvatarPosX = entity.getBlockX();
                 currentAvatarPosZ = entity.getBlockZ();
                 currentAvatarWorld = entity.getWorld();
-
                 // Set Invulnerable
                 entity.setInvulnerable(true);
                 // Clear goals
@@ -74,13 +69,13 @@ public class ModAvatar {
     }
 
     // Spawn an Avatar with given type and coordinates
-    public static String spawnModeratorAvatar(MinecraftServer server, String dim, String type, int x, int z) {
+    public static String spawnModeratorAvatar(MinecraftServer server, String dim, String type, double x, double z) {
         ServerWorld world = getWorldFromString(server, dim);
         if (world == null) return ConfigLoader.lang.feedback_04;
         // In case there is already an Avatar
         if (currentAvatarId != null) return ConfigLoader.lang.feedback_46;
         // Get ground position
-        BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, 0, z));
+        BlockPos groundPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos((int)x, 0, (int)z));
         // Mob-Typ
         EntityType<?> entityType = switch (type.toUpperCase(Locale.ROOT)) {
             case "CHICKEN" -> EntityType.CHICKEN;

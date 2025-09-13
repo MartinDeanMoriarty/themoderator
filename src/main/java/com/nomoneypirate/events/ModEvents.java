@@ -10,6 +10,7 @@ import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.llm.ModerationScheduler;
 import com.nomoneypirate.locations.Location;
 import com.nomoneypirate.locations.LocationManager;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -40,9 +41,13 @@ public class ModEvents {
     // Cooldown for chat messages
     private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
     private static final long COOLDOWN_MILLIS = ConfigLoader.config.requestCooldown * 1_000; // * 1000 = milliseconds
-
+    public static MinecraftServer SERVER;
 
     public static void registerEvents() {
+
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> SERVER = server);
+
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> SERVER = null);
 
         // "Update-Loop" and world ready event
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -80,7 +85,6 @@ public class ModEvents {
                     // AND only send if it is a dedicated server
                      if (!feedback.isEmpty() && server instanceof DedicatedServer) {
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback.toString())).thenAccept(dec -> applyDecision(server, dec));
-                        //LlmClient.sendFeedbackAsync(feedback.toString()).thenAccept(dec -> applyDecision(server, dec));
                     }
                     checked = true;
                 }
@@ -95,8 +99,7 @@ public class ModEvents {
 
             String welcomeText = ConfigLoader.lang.welcomeText.formatted(playerName);
             // Asynchronous to the LLM
-            LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText)).thenAccept(decision -> {
-            //LlmClient.moderateAsync(playerName, welcomeText).thenAccept(decision -> {
+            Objects.requireNonNull(LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText))).thenAccept(decision -> {
                 // Back to the server thread
                 server.execute(() -> applyDecision(server, decision));
             }).exceptionally(ex -> {
@@ -129,21 +132,18 @@ public class ModEvents {
             // Keyword-Check
             if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
                 long now = System.currentTimeMillis();
-                long last = cooldowns.getOrDefault(playerName, 0L);
+                long last = cooldowns.getOrDefault("Chat", 0L);
 
                 // Cooldown
                 if (now - last < COOLDOWN_MILLIS) {
-                    if (ConfigLoader.config.modLogging) LOGGER.info("Cooldown! {} – request ignored.", playerName);
+                    // Chat Output: Model is busy
+                    if (SERVER != null) SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
                     return;
                 }
+                cooldowns.put("Chat", now);
 
-                // Cooldown
-                cooldowns.put(playerName, now);
                 // Async-Request
-                LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> {
-                //LlmClient.moderateAsync(playerName, content).thenAccept(decision -> {
-                    server.execute(() -> applyDecision(server, decision));
-                }).exceptionally(ex -> {
+                LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> applyDecision(server, decision))).exceptionally(ex -> {
                     if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
                     return null;
                 });
@@ -155,15 +155,14 @@ public class ModEvents {
 
     // Apply the decisions and translate them into actions
     public static void applyDecision(MinecraftServer server, ModerationDecision decision) {
-        final String[] split = decision.value().trim().split("\\s+");
+
         switch (decision.action()) {
 
             case IGNORE -> {
                 // Feedback
                 String feedback = ConfigLoader.lang.feedback_44; 
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                //LlmClient.sendFeedbackAsync(feedback).thenAccept(dec -> applyDecision(server, dec));
-            }
+             }
 
             case STOPACTION -> {
                 String feedback = "";
@@ -201,11 +200,12 @@ public class ModEvents {
                 }
                 // Feedback   
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                //LlmClient.sendFeedbackAsync(feedback).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case CHAT -> {
+                // Chat Output
                 server.getPlayerManager().broadcast(Text.literal("The Moderator: " + decision.value()), false);
+                // Feedback
                 String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value(), "Chat");
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
             }
@@ -218,7 +218,6 @@ public class ModEvents {
                 // Feedback
                 String feedback = ConfigLoader.lang.feedback_01.formatted(list);
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                //LlmClient.sendFeedbackAsync(feedback).thenAccept(dec -> applyDecision(server, dec));
             }
 
             case TELEPORTPLAYER -> {
@@ -239,29 +238,21 @@ public class ModEvents {
             case TELEPORTPOSITION -> {
                 String feedback;
                 ServerWorld world = findModeratorWorld(server);
-                double posX = 0;
-                double posZ = 0;
-
-                if (!decision.value2().isEmpty()) {
-                    String[] parts = decision.value2().trim().split("\\s+");
-                    if (parts.length == 2) {
-                        try {
-                            posX = Integer.parseInt(parts[0]);
-                            posZ = Integer.parseInt(parts[1]);
-                        } catch (NumberFormatException e) {
-                            if (ConfigLoader.config.modLogging) LOGGER.error("NumberFormatException: ModEvent.java -> case TELEPORTPOSITION {}", String.valueOf(e));
-                        }
-                    } else {
-                        if (ConfigLoader.config.modLogging) LOGGER.warn("a Parts length problem: {}", "ModEvent.java -> case TELEPORTPOSITION");
-                    }
-                }
-
                 if (world != null) {
-                    if (Objects.equals(decision.value(), "AVATAR")) {
-                        feedback = ModActions.teleportPositionAvatar(world, currentAvatarId, posX, posZ);
+                    // Parse position
+                    Position pos = parsePosition(decision.value2(), "TELEPORTPOSITION");
+                    double posX = pos.x();
+                    double posZ = pos.z();
+
+                    if (pos.valid()) {
+                        if (Objects.equals(decision.value(), "AVATAR")) {
+                            feedback = ModActions.teleportPositionAvatar(world, currentAvatarId, posX, posZ);
+                        } else {
+                            feedback = ModActions.teleportPositionPlayer(world, decision.value(), posX, posZ);
+                        }
                     }
                     else {
-                        feedback = ModActions.teleportPositionPlayer(world, decision.value(), posX, posZ);
+                        feedback = ConfigLoader.lang.feedback_61;
                     }
                     // Feedback
                     LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
@@ -272,22 +263,17 @@ public class ModEvents {
                 String feedback;
                 currentAvatarPosX = 0;
                 currentAvatarPosZ = 0;
-                if (!decision.value3().isEmpty()) {
-                    String[] parts = decision.value3().trim().split("\\s+");
-                    if (parts.length == 2) {
-                        try {
-                            currentAvatarPosX = Integer.parseInt(parts[0]);
-                            currentAvatarPosZ = Integer.parseInt(parts[1]);
-                        } catch (NumberFormatException e) {
-                            if (ConfigLoader.config.modLogging) LOGGER.error("NumberFormatException: ModEvent.java -> case SPAWNAVATAR : {}", String.valueOf(e));
-                        }
-                    } else {
-                        if (ConfigLoader.config.modLogging) LOGGER.warn("A Parts length problem: {}", "ModEvent.java -> case SPAWN AVATAR");
-                   }
-                }
+                // Parse position
+                Position pos = parsePosition(decision.value3(), "SPAWNAVATAR");
+                double currentAvatarPosX = pos.x();
+                double currentAvatarPosZ = pos.z();
+                if (pos.valid()) {
                 feedback = spawnModeratorAvatar(server, decision.value(), decision.value2(), currentAvatarPosX, currentAvatarPosZ);
+                }
+                else {
+                    feedback = ConfigLoader.lang.feedback_61;
+                }
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-
             }
 
             case DESPAWNAVATAR -> {
@@ -321,26 +307,24 @@ public class ModEvents {
                 String feedback = ConfigLoader.lang.serverRules;
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
             }
+            case ACTIONEXAMPLES -> {
+                // Feedback
+                String feedback = ConfigLoader.lang.actionExamples;
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+            }
 
             case GOTOPOSITION -> {
                 String feedback;
-                double posX = 0;
-                double posZ = 0;
-
-                if (!decision.value().isEmpty()) {
-                    if (split.length == 2) {
-                        try {
-                            posX = Integer.parseInt(split[0]);
-                            posZ = Integer.parseInt(split[1]);
-                        } catch (NumberFormatException e) {
-                            if (ConfigLoader.config.modLogging) LOGGER.error("NumberFormatException: ModEvent.java -> case GOTOPOSITION {}", String.valueOf(e));
-                        }
-                    } else {
-                        if (ConfigLoader.config.modLogging) LOGGER.warn("Parts length problem: {}", "ModEvent.java -> case GOTOPOSITION");
-                    }
+                // Parse position
+                Position pos = parsePosition(decision.value(), "GOTOPOSITION");
+                double posX = pos.x();
+                double posZ = pos.z();
+                if (pos.valid()) {
+                 feedback = ModActions.startGotoPosition((ServerWorld) currentAvatarWorld, currentAvatarId, posX, posZ);
                 }
-
-                feedback = ModActions.startGotoPosition((ServerWorld) currentAvatarWorld, currentAvatarId, posX, posZ);
+                else {
+                    feedback = ConfigLoader.lang.feedback_61;
+                }
                 // Feedback
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
             }
@@ -467,31 +451,24 @@ public class ModEvents {
 
             case SETLOCATION -> {
                 String feedback;
-                double posX = 0;
-                double posZ = 0;
-                boolean validCoords = false;
-
-                try {
-                    // Koordinaten parsen
-                    if (!decision.value().isEmpty()) {
-                        if (split.length == 2) {
-                            posX = Double.parseDouble(split[0]);
-                            posZ = Double.parseDouble(split[1]);
-                            validCoords = true;
+                Position pos = parsePosition(decision.value3(), "SETLOCATION");
+                double posX = pos.x();
+                double posZ = pos.z();
+                if (pos.valid()) {
+                    try {
+                        if (!decision.value2().isEmpty()) {
+                            LocationManager.setLocation(decision.value(), decision.value2(), (int) posX, (int) posZ);
+                            feedback = ConfigLoader.lang.feedback_54.formatted(decision.value2()); // Saved
                         } else {
-                            if (ConfigLoader.config.modLogging) LOGGER.warn("Parts length problem: ModEvent.java -> case SETLOCATION");
+                            feedback = ConfigLoader.lang.feedback_59.formatted(decision.value2()); // Error
                         }
+                    } catch (Exception e) {
+                        if (ConfigLoader.config.modLogging) LOGGER.error("Error setting location '{}': {}", decision.value2(), e.getMessage());
+                        feedback = ConfigLoader.lang.feedback_60.formatted(decision.value2()); // Error
                     }
-
-                    if (validCoords && !decision.value2().isEmpty()) {
-                        LocationManager.setLocation(decision.value(), decision.value2(), (int) posX, (int) posZ);
-                        feedback = ConfigLoader.lang.feedback_54.formatted(decision.value2()); // Saved
-                    } else {
-                        feedback = ConfigLoader.lang.feedback_59.formatted(decision.value2()); // Error
-                    }
-                } catch (Exception e) {
-                    if (ConfigLoader.config.modLogging) LOGGER.error("Error setting location '{}': {}", decision.value2(), e.getMessage());
-                    feedback = ConfigLoader.lang.feedback_60.formatted(decision.value2()); // Error
+                }
+                else {
+                    feedback = ConfigLoader.lang.feedback_61;
                 }
 
                 LlmClient.moderateAsync(
@@ -619,7 +596,9 @@ public class ModEvents {
             case STOPCHAIN -> {
                 // Do nothing
             }
+
         }
+
     }
 
     private static @NotNull BannedPlayerEntry getBannedPlayerEntry(ModerationDecision decision, ServerPlayerEntity player) {
@@ -637,5 +616,33 @@ public class ModEvents {
                 reason
         );
     }
+
+    public record Position(double x, double z, boolean valid) {}
+
+    public static Position parsePosition(String input, String caseString) {
+        double posX = 0;
+        double posZ = 0;
+        boolean valid = false;
+
+        if (input != null && !input.isEmpty()) {
+            String[] parts = input.trim().split("\\s+");
+            if (parts.length == 2) {
+                try {
+                    posX = Integer.parseInt(parts[0]);
+                    posZ = Integer.parseInt(parts[1]);
+                    valid = true;
+                } catch (NumberFormatException e) {
+                    if (ConfigLoader.config.modLogging)
+                        LOGGER.error("NumberFormatException: ModEvent.java -> case {} {}", caseString, e.toString());
+                }
+            } else {
+                if (ConfigLoader.config.modLogging)
+                    LOGGER.warn("Parts length problem: ModEvent.java -> case {}", caseString);
+            }
+        }
+
+        return new Position(posX, posZ, valid);
+    }
+
 
 }

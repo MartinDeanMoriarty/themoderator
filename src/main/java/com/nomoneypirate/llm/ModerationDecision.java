@@ -11,6 +11,7 @@ public record ModerationDecision(Action action, String value, String value2, Str
         WHEREIS,
         FEEDBACK,
         SERVERRULES,
+        ACTIONEXAMPLES,
         PLAYERLIST,
         TELEPORTPLAYER,
         TELEPORTPOSITION,

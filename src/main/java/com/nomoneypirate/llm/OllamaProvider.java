@@ -13,9 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.net.http.*;
 import java.util.concurrent.CompletableFuture;
-import com.google.gson.*;
 
 public class OllamaProvider implements LlmProvider {
 
@@ -25,7 +23,7 @@ public class OllamaProvider implements LlmProvider {
             .build();
     private static final Gson GSON = new GsonBuilder().create();
     // Set model name + prompts
-    private static final String MODEL = ConfigLoader.config.model; // Ollama-Model
+    private static final String MODEL = ConfigLoader.config.ollamaModel; // Ollama-Model
     private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     // Set llm model token limit
     static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
@@ -69,6 +67,6 @@ public class OllamaProvider implements LlmProvider {
                     if (type.loggingEnabled) LlmClient.logToFile(filename, "[" + timestamp + "] Response:\n" + responseText);
                     return LlmClient.parseDecision(responseText);
                 });
-
     }
+
 }

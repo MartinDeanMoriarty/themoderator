@@ -72,7 +72,8 @@ However, you can download a compiled and !MOSTLY UNTESTED! version here:
 4. You can run or build the project in ide.
 
 ## Contributing
-Contributions are welcome! If you think something is missing, incorrect, or could be improved upon, please feel free to open an issue or submit a pull request.
+At the Moment its just core elements, and I'm working on a working feedback and prompt architecture.
+But if you wish to help, contributions are welcome! Please feel free to open an issue.
 
 ## License
 Creative Commons

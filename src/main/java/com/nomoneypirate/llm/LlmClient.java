@@ -2,6 +2,7 @@ package com.nomoneypirate.llm;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
+import com.nomoneypirate.events.ModEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
 import java.net.http.*;
@@ -15,24 +16,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.google.gson.*;
+import net.minecraft.text.Text;
 
 public final class LlmClient {
 
     private static final LlmProvider PROVIDER;
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
     private static final Gson GSON = new GsonBuilder().create();
-
-    // Warm up
+    private static Boolean actionMode = false;
+    // Ollama warm up
     private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
-    private static final String MODEL = ConfigLoader.config.model;
+    private static final String MODEL = ConfigLoader.config.ollamaModel;
 
+    // Choose provider
     static {
         if (ConfigLoader.config.useOpenAi) {
             PROVIDER = new OpenAiProvider();
-        } else {
+        }
+        else if (ConfigLoader.config.useGemini) {
+            PROVIDER = new GeminiProvider();
+        }
+        else {
             PROVIDER = new OllamaProvider();
         }
     }
@@ -57,7 +63,6 @@ public final class LlmClient {
             this.logFilenamePrefix = logFilenamePrefix;
             this.loggingEnabled = loggingEnabled;
         }
-
         public String buildPrompt(String rules, String arg) {
             return builder.build(rules, arg);
         }
@@ -65,7 +70,16 @@ public final class LlmClient {
     }
 
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
-        return PROVIDER.moderateAsync(type, arg);
+        if (!actionMode) {
+            // Start action mode. Stopped with STOPCHAIN
+            actionMode = true;
+            return PROVIDER.moderateAsync(type, arg);
+        }
+        else {
+            // Chat Output: Model is busy
+            if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
     // Parse response
@@ -100,6 +114,7 @@ public final class LlmClient {
                 case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
                 case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
                 case "SERVERRULES" -> ModerationDecision.Action.SERVERRULES;
+                case "ACTIONEXAMPLES" -> ModerationDecision.Action.ACTIONEXAMPLES;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
                 case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORTPLAYER;
@@ -125,6 +140,8 @@ public final class LlmClient {
                 case "STOPCHAIN" -> ModerationDecision.Action.STOPCHAIN;
                 default -> ModerationDecision.Action.IGNORE;
             };
+            // End action mode
+            if (actionStr.equals("STOPCHAIN")) { actionMode = false; }
             return new ModerationDecision(action, value, value2, value3);
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON

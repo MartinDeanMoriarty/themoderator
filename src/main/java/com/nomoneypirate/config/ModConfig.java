@@ -6,8 +6,8 @@ public class ModConfig {
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
-    public String model = "mistral-nemo";
-    // OpenAi endpoint
+    public String ollamaModel = "mistral-nemo";
+    // OpenAi
     public Boolean useOpenAi = false;
     // Usually no change needed.
     public String OpenAiURI = "https://api.openai.com/v1/chat/completions";
@@ -15,6 +15,12 @@ public class ModConfig {
     public String openAiApiKey = "?";
     //OpenAi model
     public String openAiModel = "gpt-4.1";
+    // Google gemini
+    public Boolean useGemini = false;
+    // Usually no change needed.
+    public String geminiApiUri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    // OpenAi api-key
+    public String geminiApiKey = "?";
     // The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds
@@ -25,7 +31,7 @@ public class ModConfig {
     // Activation keywords
     public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
     // Request cooldown in seconds
-    public Integer requestCooldown = 1;
+    public Integer requestCooldown = 4;
     // Is moderator allowed to use BAN?
     public Boolean allowBanCommand = true;
     // Server with a whitelist should use this!
