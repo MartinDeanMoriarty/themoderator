@@ -24,7 +24,6 @@ public final class LlmClient {
     private static final LlmProvider PROVIDER;
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
     private static final Gson GSON = new GsonBuilder().create();
-    private static Boolean actionMode = false;
     // Ollama warm up
     private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
     private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
@@ -70,16 +69,7 @@ public final class LlmClient {
     }
 
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
-        if (!actionMode) {
-            // Start action mode. Stopped with STOPCHAIN
-            actionMode = true;
-            return PROVIDER.moderateAsync(type, arg);
-        }
-        else {
-            // Chat Output: Model is busy
-            if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
-            return CompletableFuture.completedFuture(null);
-        }
+        return PROVIDER.moderateAsync(type, arg);
     }
 
     // Parse response
@@ -140,8 +130,6 @@ public final class LlmClient {
                 case "STOPCHAIN" -> ModerationDecision.Action.STOPCHAIN;
                 default -> ModerationDecision.Action.IGNORE;
             };
-            // End action mode
-            if (actionStr.equals("STOPCHAIN")) { actionMode = false; }
             return new ModerationDecision(action, value, value2, value3);
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON

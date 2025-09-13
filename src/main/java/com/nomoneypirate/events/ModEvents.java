@@ -26,6 +26,7 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,9 @@ public class ModEvents {
     // Cooldown for chat messages
     private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
     private static final long COOLDOWN_MILLIS = ConfigLoader.config.requestCooldown * 1_000; // * 1000 = milliseconds
+
     public static MinecraftServer SERVER;
+    private static Boolean actionMode = false;
 
     public static void registerEvents() {
 
@@ -93,20 +96,30 @@ public class ModEvents {
 
         // Intercept player join messages (server-side)
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            // Get player name
-            ServerPlayerEntity player = handler.getPlayer();
-            String playerName = player.getName().getString();
+            if (!actionMode) {
+                // Start action mode. Stopped with STOPCHAIN
+                actionMode = true;
+                // Get player name
+                ServerPlayerEntity player = handler.getPlayer();
+                String playerName = player.getName().getString();
 
-            String welcomeText = ConfigLoader.lang.welcomeText.formatted(playerName);
-            // Asynchronous to the LLM
-            Objects.requireNonNull(LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText))).thenAccept(decision -> {
-                // Back to the server thread
-                server.execute(() -> applyDecision(server, decision));
-            }).exceptionally(ex -> {
-                // In case of errors: do not block anything, at most log
-                if (ConfigLoader.config.modLogging) LOGGER.error("Welcoming failed: {}", ex.getMessage());
-                return null;
-            });
+                String welcomeText = ConfigLoader.lang.welcomeText.formatted(playerName);
+                // Asynchronous to the LLM
+
+                Objects.requireNonNull(LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText))).thenAccept(decision -> {
+                    // Back to the server thread
+                    server.execute(() -> applyDecision(server, decision));
+                }).exceptionally(ex -> {
+                    // In case of errors: do not block anything, at most log
+                    if (ConfigLoader.config.modLogging) LOGGER.error("Welcoming failed: {}", ex.getMessage());
+                    return null;
+                });
+            }
+            else {
+                // Chat Output: Model is busy
+                if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
+
+            }
         });
 
         // Intercept game messages for moderation scheduler
@@ -119,36 +132,45 @@ public class ModEvents {
 
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
-            MinecraftServer server = sender.getServer();
-            if (server == null) return;
+            if (!actionMode) {
+                // Start action mode. Stopped with STOPCHAIN
+                actionMode = true;
+                MinecraftServer server = sender.getServer();
+                if (server == null) return;
 
-            String playerName = sender.getName().getString();
-            String content = message.getContent().getString();
+                String playerName = sender.getName().getString();
+                String content = message.getContent().getString();
 
-            // Add Chat Messages to moderation scheduler
-            String chatMessage = ConfigLoader.lang.feedback_47.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
-            ModerationScheduler.addMessage(chatMessage);
+                // Add Chat Messages to moderation scheduler
+                String chatMessage = ConfigLoader.lang.feedback_47.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
+                ModerationScheduler.addMessage(chatMessage);
 
-            // Keyword-Check
-            if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
-                long now = System.currentTimeMillis();
-                long last = cooldowns.getOrDefault("Chat", 0L);
+                // Keyword-Check
+                if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
+                    long now = System.currentTimeMillis();
+                    long last = cooldowns.getOrDefault("Chat", 0L);
 
-                // Cooldown
-                if (now - last < COOLDOWN_MILLIS) {
-                    // Chat Output: Model is busy
-                    if (SERVER != null) SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
-                    return;
-                }
-                cooldowns.put("Chat", now);
+                    // Cooldown
+                    if (now - last < COOLDOWN_MILLIS) {
+                        // Chat Output: Model is busy
+                       if (SERVER != null) SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
+                       return;
+                    }
+                    cooldowns.put("Chat", now);
 
-                // Async-Request
-                LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> applyDecision(server, decision))).exceptionally(ex -> {
+                    // Async-Request
+                    LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> applyDecision(server, decision))).exceptionally(ex -> {
                     if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
                     return null;
                 });
             }
+        }
+            else {
+            // Chat Output: Model is busy
+            if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
+        }
         });
+
         // Log this!
         if (ConfigLoader.config.modLogging) LOGGER.info("4of5 Events Initialized.");
     }
@@ -594,7 +616,8 @@ public class ModEvents {
             }
 
             case STOPCHAIN -> {
-                // Do nothing
+                // Stop action mode
+                 actionMode = false;
             }
 
         }
