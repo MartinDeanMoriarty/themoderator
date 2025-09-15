@@ -3,8 +3,6 @@ package com.nomoneypirate.llm;
 import com.nomoneypirate.config.ConfigLoader;
 import java.net.http.*;
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.gson.*;
@@ -15,45 +13,36 @@ public class GeminiProvider implements LlmProvider {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Gson GSON = new GsonBuilder().create();
     private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
+    // Set llm model token limit
     static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
 
     @Override
     public CompletableFuture<ModerationDecision> moderateAsync(LlmClient.ModerationType type, String arg) {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION)
-            contextManager.addMessage("recall", arg);
-
+        // Add to context manager (cache)
+        if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", arg);
+        // Build the prompt with context manager (cache)
         String prompt = contextManager.buildPrompt("recall");
         String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
-
+        // Log this
+        PromptLogger.logPrompt(type, fullPrompt, "Gemini");
+        // Build prompt for gemini
         JsonObject part = new JsonObject();
         part.addProperty("text", fullPrompt);
-
         JsonArray parts = new JsonArray();
         parts.add(part);
-
         JsonObject message = new JsonObject();
         message.add("parts", parts);
-
         JsonArray messages = new JsonArray();
         messages.add(message);
-
         JsonObject body = new JsonObject();
         body.add("contents", messages);
-
+        // Build http request
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GEMINI_URI + "?key=" + API_KEY))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
                 .build();
-
-        String jsonBody = GSON.toJson(body);
-        String filename = type.logFilenamePrefix + (type == LlmClient.ModerationType.SUMMARY
-                ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".log"
-                : ".log");
-        if (type.loggingEnabled) LlmClient.logToFile(filename, "[" + timestamp + "] Request:\n" + jsonBody);
-
+        // Send http request and get response async
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
@@ -66,7 +55,9 @@ public class GeminiProvider implements LlmProvider {
                             .get(0).getAsJsonObject()
                             .get("text").getAsString().trim();
 
-                    if (type.loggingEnabled) LlmClient.logToFile(filename, "[" + timestamp + "] Response:\n" + content);
+                    // Add action to context manager (cache)
+                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.feedback_62.formatted(content));
+                    // return response
                     return LlmClient.parseDecision(content);
                 });
     }

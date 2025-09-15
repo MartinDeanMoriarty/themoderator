@@ -2,22 +2,15 @@ package com.nomoneypirate.llm;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
-import com.nomoneypirate.events.ModEvents;
-import net.fabricmc.loader.api.FabricLoader;
-import java.io.IOException;
 import java.net.http.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.google.gson.*;
-import net.minecraft.text.Text;
 
 public final class LlmClient {
 
@@ -102,6 +95,8 @@ public final class LlmClient {
                 case "KICK" -> ModerationDecision.Action.KICK;
                 case "BAN" -> ModerationDecision.Action.BAN;
                 case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
+                case "WHOIS" -> ModerationDecision.Action.WHOIS;
+                case "PLAYERMEM" -> ModerationDecision.Action.PLAYERMEM;
                 case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
                 case "SERVERRULES" -> ModerationDecision.Action.SERVERRULES;
                 case "ACTIONEXAMPLES" -> ModerationDecision.Action.ACTIONEXAMPLES;
@@ -122,6 +117,7 @@ public final class LlmClient {
                 case "GIVEPLAYER" -> ModerationDecision.Action.GIVEPLAYER;
                 case "CHANGEWEATHER" -> ModerationDecision.Action.CHANGEWEATHER;
                 case "CHANGETIME" -> ModerationDecision.Action.CHANGETIME;
+                case "SLEEP" -> ModerationDecision.Action.SLEEP;
                 case "LISTLOCATIONS" -> ModerationDecision.Action.LISTLOCATIONS;
                 case "GETLOCATION" -> ModerationDecision.Action.GETLOCATION;
                 case "SETLOCATION" -> ModerationDecision.Action.SETLOCATION;
@@ -180,16 +176,6 @@ public final class LlmClient {
         });
     }
 
-    public static void logToFile(String filename, String content) {
-        Path logDir = FabricLoader.getInstance().getGameDir().resolve("logs");
-        Path logFile = logDir.resolve(filename);
-        try {
-            Files.createDirectories(logDir);
-            Files.writeString(logFile, content + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.warn("Logfile save error!");
-        }
-    }
-
     private LlmClient() {}
+
 }

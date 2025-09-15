@@ -10,6 +10,7 @@ import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.llm.ModerationScheduler;
 import com.nomoneypirate.locations.Location;
 import com.nomoneypirate.locations.LocationManager;
+import com.nomoneypirate.profiles.PlayerManager;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
@@ -26,7 +27,6 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -103,7 +103,7 @@ public class ModEvents {
                 ServerPlayerEntity player = handler.getPlayer();
                 String playerName = player.getName().getString();
 
-                String welcomeText = ConfigLoader.lang.welcomeText.formatted(playerName);
+                String welcomeText = ConfigLoader.lang.playerJoined.formatted(playerName);
                 // Asynchronous to the LLM
 
                 Objects.requireNonNull(LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText))).thenAccept(decision -> {
@@ -172,7 +172,7 @@ public class ModEvents {
         });
 
         // Log this!
-        if (ConfigLoader.config.modLogging) LOGGER.info("4of5 Events Initialized.");
+        if (ConfigLoader.config.modLogging) LOGGER.info("4of6 Events Initialized.");
     }
 
     // Apply the decisions and translate them into actions
@@ -317,6 +317,46 @@ public class ModEvents {
                 // Feedback
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
             }
+            case WHOIS -> {
+                String feedback;
+                String playerName = decision.value();
+                if (playerName != null) {
+                    if (PlayerManager.isKnown(playerName)) {
+                        feedback = ConfigLoader.lang.feedback_64.formatted(playerName, PlayerManager.getProfile(playerName).toString());
+                    }
+                    else {
+                        // First contact
+                        PlayerManager.addPlayer(playerName);
+                        feedback = ConfigLoader.lang.feedback_63.formatted(playerName);
+                    }
+                }
+                else {
+                    feedback = ConfigLoader.lang.feedback_02;
+                }
+                // Feedback
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+            }
+            case PLAYERMEM -> {
+                String feedback;
+                String playerName = decision.value();
+                if (playerName != null) {
+                    if (PlayerManager.isKnown(playerName)) {
+                        PlayerManager.addTag(playerName, decision.value2());
+                        feedback = ConfigLoader.lang.feedback_65.formatted(decision.value2(), playerName);
+                    }
+                    else {
+                        // First contact
+                        PlayerManager.addPlayer(playerName);
+                        feedback = ConfigLoader.lang.feedback_65.formatted(decision.value2(), playerName);
+                        PlayerManager.addTag(playerName, decision.value2());
+                    }
+                }
+                else {
+                    feedback = ConfigLoader.lang.feedback_02;
+                }
+                // Feedback
+                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+            }
 
             case FEEDBACK -> {
                 // Feedback
@@ -406,6 +446,16 @@ public class ModEvents {
                 ServerWorld world = findModeratorWorld(server);
                 if (world != null) {
                     feedback = ModActions.changeTime(world, decision.value());
+                    // Feedback
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                }
+            }
+
+            case SLEEP -> {
+                String feedback;
+                ServerWorld world = findModeratorWorld(server);
+                if (world != null) {
+                    feedback = ModActions.sleepAtNight(world);
                     // Feedback
                     LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                 }
@@ -615,10 +665,8 @@ public class ModEvents {
                 }
             }
 
-            case STOPCHAIN -> {
-                // Stop action mode
-                 actionMode = false;
-            }
+            case STOPCHAIN -> // Stop action mode
+                    actionMode = false;
 
         }
 

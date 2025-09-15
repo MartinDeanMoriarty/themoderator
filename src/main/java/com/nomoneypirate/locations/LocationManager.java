@@ -20,7 +20,7 @@ import com.google.gson.*;
 public class LocationManager {
     private static final Path locationPath = FabricLoader.getInstance()
             .getConfigDir()
-            .resolve("themoderator/locations.json");
+            .resolve("themoderator/locationManager.json");
 
     private static final Map<String, Location> locations = new HashMap<>();
 
@@ -38,9 +38,9 @@ public class LocationManager {
                 locations.putAll(loaded);
             }
             // Log this!
-            if (ConfigLoader.config.modLogging) LOGGER.info("5of5 Locations Initialized.");
+            if (ConfigLoader.config.modLogging) LOGGER.info("6of6 Location Manager Initialized.");
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("5of5 Error loading locations: {}", e.getMessage());
+            if (ConfigLoader.config.modLogging) LOGGER.error("6of6 Error loading Location Manager: {}", e.getMessage());
         }
     }
 
@@ -51,7 +51,7 @@ public class LocationManager {
                     .toJson(locations);
             Files.writeString(locationPath, json);
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("Error saving locations: {}", e.getMessage());
+            if (ConfigLoader.config.modLogging) LOGGER.error("Error saving location: {}", e.getMessage());
         }
     }
 

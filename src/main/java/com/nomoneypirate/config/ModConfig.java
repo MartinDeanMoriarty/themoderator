@@ -3,6 +3,8 @@ package com.nomoneypirate.config;
 import java.util.Set;
 
 public class ModConfig {
+    // Ollama
+    public Boolean useOllama = true;
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
@@ -19,7 +21,7 @@ public class ModConfig {
     public Boolean useGemini = false;
     // Usually no change needed.
     public String geminiApiUri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-    // OpenAi api-key
+    // Gemini api-key
     public String geminiApiKey = "?";
     // The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;

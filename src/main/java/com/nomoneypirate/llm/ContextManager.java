@@ -7,7 +7,6 @@ import java.util.*;
 public class ContextManager {
     private final int maxTokens;
     private final Map<String, Deque<String>> llmContexts = new HashMap<>();
-
     public ContextManager(int maxTokens) {
         this.maxTokens = maxTokens;
     }
@@ -51,6 +50,8 @@ public class ContextManager {
             // Cut off the oldest which is first!
             String removed = context.removeFirst();
             estimatedTokens -= removed.length() / 4;
+            // recalculate tokens
+            finalEstimation = estTokensSystemRules + estimatedTokens;
         }
     }
 }

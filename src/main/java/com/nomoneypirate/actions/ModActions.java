@@ -126,24 +126,29 @@ public class ModActions {
     public static String changeTime(ServerWorld world, String time) {
         switch (time.toLowerCase()) {
             case "day":
-                world.setTimeOfDay(1000); // Morgen
+                world.setTimeOfDay(1000); // Morning
                 break;
             case "noon":
-                world.setTimeOfDay(6000); // Mittag
+                world.setTimeOfDay(6000); // Noon
                 break;
             case "evening":
-                world.setTimeOfDay(12000); // Sonnenuntergang
+                world.setTimeOfDay(12000); // Evening
                 break;
             case "night":
-                world.setTimeOfDay(13000); // Nacht
+                world.setTimeOfDay(13000); // Night
                 break;
             case "midnight":
-                world.setTimeOfDay(18000); // Mitternacht
+                world.setTimeOfDay(18000); // Midnight
                 break;
             default:
                 return ConfigLoader.lang.feedback_02;
         }
         return ConfigLoader.lang.feedback_43.formatted(time);
+    }
+
+    public static String sleepAtNight(ServerWorld world) {
+        world.setTimeOfDay(1000); // Morning
+        return ConfigLoader.lang.feedback_66;
     }
 
     public static String teleportAvatar(ServerWorld world, UUID mobId, String playerName) {
