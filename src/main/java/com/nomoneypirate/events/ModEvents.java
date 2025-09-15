@@ -50,7 +50,10 @@ public class ModEvents {
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> SERVER = server);
 
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> SERVER = null);
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            SERVER = null;
+            ModerationScheduler.shutdown();
+        });
 
         // "Update-Loop" and world ready event
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -128,8 +131,10 @@ public class ModEvents {
         ServerMessageEvents.GAME_MESSAGE.register((server, text, params) -> {
             String content = text.getString();
             // Add Game Messages to moderation scheduler
-            String serverMessage = ConfigLoader.lang.feedback_48.formatted(content);
-            ModerationScheduler.addMessage(serverMessage);
+            if (ConfigLoader.config.scheduledModeration) {
+                String serverMessage = ConfigLoader.lang.feedback_48.formatted(content);
+                ModerationScheduler.addMessage(serverMessage);
+            }
         });
 
         //Intercept chat messages (server-side)
@@ -145,7 +150,9 @@ public class ModEvents {
 
                 // Add Chat Messages to moderation scheduler
                 String chatMessage = ConfigLoader.lang.feedback_47.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
-                ModerationScheduler.addMessage(chatMessage);
+                if (ConfigLoader.config.scheduledModeration) {
+                    ModerationScheduler.addMessage(chatMessage);
+                }
 
                 // Keyword-Check
                 if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {

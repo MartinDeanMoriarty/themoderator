@@ -13,7 +13,7 @@ import static com.nomoneypirate.events.ModEvents.applyDecision;
 public class ModerationScheduler {
 
     private static final List<String> messageBuffer = new ArrayList<>();
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    public static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public static void runScheduledTask(MinecraftServer server) {
         // create snapshot and clear list and clear messageBuffer
@@ -26,7 +26,7 @@ public class ModerationScheduler {
         // Snapshot to summary
         String summary = String.join("\n", snapshot);
         // If summary is empty, don't let the task go to waste, use it to do something.
-        // So, let the llm tell players about the activation keywords
+        // So, let the llm tell players about the activation keywords or what ever
         String keyWords = ConfigLoader.config.activationKeywords.toString();
         if (summary.isEmpty()) summary = ConfigLoader.lang.feedback_38.formatted(keyWords);
 

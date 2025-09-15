@@ -52,18 +52,22 @@ public class LangConfig {
     public String feedback_44 = "Du hast eine Anfrage ignoriert. Das ist kein Fehler!";
     public String feedback_45 = "Du hast eine Nachricht: %s - An %s geschrieben.";
     public String feedback_46 = "Dein Avatar scheint schon vorhanden zu sein. Verwende WHEREIS!";
+    // This is to format the Context
     public String feedback_47 = """
             [Anfrage]
             %s
             """;
+    // This is to format the Context
     public String feedback_48 = """
             [Server Nachricht]
             %s
             """;
+    // This is to format the Context
     public String feedback_49 = """
             [Feedback]
             %s
             """;
+    // This is to format the Context
     public String feedback_50 = """
             [Zusammenfassung]
             %s
@@ -79,6 +83,7 @@ public class LangConfig {
     public String feedback_59 = "Du hast eine ungültige Koordinate oder Name für Location %s. Versuche es anders.";
     public String feedback_60 = "Fehler beim Speichern der Location %s. Versuche es erneut.";
     public String feedback_61 = "Du hast die Koordinaten falsch verwendet! Versuche es erneut.";
+    // This is to format the Context
     public String feedback_62 = """
             [Aktion]
             %s
