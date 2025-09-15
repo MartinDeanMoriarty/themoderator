@@ -55,10 +55,12 @@ public class ModEvents {
         // "Update-Loop" and world ready event
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             // Scheduler
-            tickCounter++;
-            if (tickCounter >= INTERVAL_TICKS) {
-                tickCounter = 0;
-                ModerationScheduler.runScheduledTask(server);
+            if (ConfigLoader.config.scheduledModeration) {
+                tickCounter++;
+                if (tickCounter >= INTERVAL_TICKS) {
+                    tickCounter = 0;
+                    ModerationScheduler.runScheduledTask(server);
+                }
             }
 
             ServerWorld world = findModeratorWorld(server);

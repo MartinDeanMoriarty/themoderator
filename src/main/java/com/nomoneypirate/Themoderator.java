@@ -37,7 +37,7 @@ public class Themoderator implements ModInitializer {
         // Load Locations
         LocationManager.loadLocations();
         // Warmup ollama model
-        if (ConfigLoader.config.useOllama) LlmClient.warmupModel();
+        if (ConfigLoader.config.useOllama && ConfigLoader.config.ollamaWarmup) LlmClient.warmupModel();
     }
 
 }
