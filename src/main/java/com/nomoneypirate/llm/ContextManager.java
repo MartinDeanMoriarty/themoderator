@@ -1,7 +1,6 @@
 package com.nomoneypirate.llm;
 
 import com.nomoneypirate.config.ConfigLoader;
-
 import java.util.*;
 
 public class ContextManager {

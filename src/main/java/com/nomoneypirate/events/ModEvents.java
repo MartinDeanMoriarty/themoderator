@@ -35,10 +35,13 @@ public class ModEvents {
     // For world ready event
     static boolean checked = false;
     // Scheduler interval
-    private static int tickCounter = 0;
+    private static int moderationTickCounter = 0;
     private static final int TICKS_PER_MINUTE = 20 * 60;
-    private static final int INTERVAL_MINUTES = ConfigLoader.config.scheduleInterval;
-    public static final int INTERVAL_TICKS = TICKS_PER_MINUTE * INTERVAL_MINUTES;
+    private static final int INTERVAL_MINUTES = ConfigLoader.config.scheduleModerationInterval;
+    public static final int MODERATE_INTERVAL_TICKS = TICKS_PER_MINUTE * INTERVAL_MINUTES;
+    private static int restartTickCounter = 0;
+    private static final int RESTART_INTERVAL = ConfigLoader.config.serverRestartInterval;
+    public static final int RESTART_INTERVAL_TICKS = TICKS_PER_MINUTE * RESTART_INTERVAL;
     // Cooldown for chat messages
     private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
     private static final long COOLDOWN_MILLIS = ConfigLoader.config.requestCooldown * 1_000; // * 1000 = milliseconds
@@ -58,13 +61,17 @@ public class ModEvents {
         // "Update-Loop" and world ready event
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             // Scheduler
-            if (ConfigLoader.config.scheduledModeration) {
-                tickCounter++;
-                if (tickCounter >= INTERVAL_TICKS) {
-                    tickCounter = 0;
-                    ModerationScheduler.runScheduledTask(server);
+            moderationTickCounter++;
+                if (moderationTickCounter >= MODERATE_INTERVAL_TICKS) {
+                    moderationTickCounter = 0;
+                    if (ConfigLoader.config.scheduledModeration) ModerationScheduler.runScheduledTask(server, "summary");
                 }
-            }
+            restartTickCounter++;
+                if (restartTickCounter >= RESTART_INTERVAL_TICKS) {
+                    restartTickCounter = 0;
+                    if (ConfigLoader.config.scheduledServerRestart) ModerationScheduler.runScheduledTask(server, "restart");
+                }
+
 
             ServerWorld world = findModeratorWorld(server);
             if (checked && currentAvatarId != null) {
@@ -86,8 +93,10 @@ public class ModEvents {
                     feedback.append(ConfigLoader.lang.feedback_17);
                     // Search for lingering mob
                     if (searchModeratorAvatar(world)) {
-                        // Avatar (not)found message
+                        // Avatar found message
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
+                        // Chat Output: Moderator has an Avatar
+                        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_67),false);
                     }
                     // Only send if there is a feedback
                     // AND only send if it is a dedicated server

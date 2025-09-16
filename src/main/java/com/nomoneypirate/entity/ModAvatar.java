@@ -1,6 +1,7 @@
 package com.nomoneypirate.entity;
 
 import com.nomoneypirate.config.ConfigLoader;
+import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.mixin.MobEntityAccessor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -114,7 +115,10 @@ public class ModAvatar {
         // CustomName
         entity.setCustomName(Text.literal("The Moderator"));
         entity.setCustomNameVisible(true);
+        // PLay a sound
         entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
+        // Chat Output: Moderator has an Avatar
+        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_67),false);
         return ConfigLoader.lang.feedback_03.formatted(currentAvatarWorld, currentAvatarType, currentAvatarPosX, currentAvatarPosZ);
     }
 
@@ -138,11 +142,15 @@ public class ModAvatar {
                 if (entity.hasCustomName() &&
                         "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
                         !(entity instanceof PlayerEntity)) {
+                    // PLay a sound
+                    entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
                     entity.discard(); // Remove Entity
                     found = true;
                 }
             }
         }
+        // Chat Output: Moderator despawned Avatar
+        if (found && ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_68),false);
         if (!found) return ConfigLoader.lang.feedback_06; else return ConfigLoader.lang.feedback_05;
     }
 

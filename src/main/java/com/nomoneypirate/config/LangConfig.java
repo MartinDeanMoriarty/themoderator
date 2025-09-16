@@ -92,6 +92,9 @@ public class LangConfig {
     public String feedback_64 = "Der Spieler %s ist dir bekannt und du hast folgende Erinnerungen: %s";
     public String feedback_65 = "Du hast jetzt für Spieler %s eine neue Erinnerung: %s.";
     public String feedback_66 = "Es ist Morgen. Du hast die Nacht durchgeschlafen.";
+    public String feedback_67 = "Der Moderator hat seinen Avatar ge-spawned.";
+    public String feedback_68 = "Der Moderator hat seinen Avatar de-spawned.";
+    public String feedback_69 = "Achtung Moderator! Der Minecraft Server wird wie geplant einen neustart durchführen. Bitte informiere alle Spieler darüber.";
     public String playerFeedback = "Der Moderator ist beschäftigt, frag ihn gleich noch mal.";
     // This is to format the system prompt
     public String systemPrompt = """

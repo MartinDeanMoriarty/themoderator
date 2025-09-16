@@ -46,7 +46,13 @@ public class ModConfig {
     //// Moderation schedule
     public Boolean scheduledModeration = false;
     // Moderation schedule interval in minutes
-    public Integer scheduleInterval = 30;
+    public Integer scheduleModerationInterval = 120;
+    // Scheduled server provider restart announcement
+    public Boolean scheduledServerRestart = false;
+    // Announcement schedule interval in minutes
+    public Integer serverRestartInterval = 10;
+    // Automatic server provider restart at hour 0-23
+    public Integer autoRestartHour = 4;
     //// === Logging ===
     // Moderation schedule logging
     public Boolean scheduleLogging = false;
