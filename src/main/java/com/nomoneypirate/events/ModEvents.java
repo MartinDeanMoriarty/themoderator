@@ -119,7 +119,6 @@ public class ModEvents {
 
                 String welcomeText = ConfigLoader.lang.playerJoined.formatted(playerName);
                 // Asynchronous to the LLM
-
                 Objects.requireNonNull(LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.feedback_47.formatted(welcomeText))).thenAccept(decision -> {
                     // Back to the server thread
                     server.execute(() -> applyDecision(server, decision));
@@ -148,9 +147,7 @@ public class ModEvents {
 
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
-            if (!actionMode) {
-                // Start action mode. Stopped with STOPCHAIN
-                actionMode = true;
+
                 MinecraftServer server = sender.getServer();
                 if (server == null) return;
 
@@ -165,28 +162,33 @@ public class ModEvents {
 
                 // Keyword-Check
                 if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
-                    long now = System.currentTimeMillis();
-                    long last = cooldowns.getOrDefault("Chat", 0L);
+                    if (!actionMode) {
+                        // Start action mode. Stopped with STOPCHAIN
+                        actionMode = true;
+                        long now = System.currentTimeMillis();
+                        long last = cooldowns.getOrDefault("Chat", 0L);
 
-                    // Cooldown
-                    if (now - last < COOLDOWN_MILLIS) {
-                        // Chat Output: Model is busy
-                       if (SERVER != null) SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
-                       return;
+                        // Cooldown
+                        if (now - last < COOLDOWN_MILLIS) {
+                            // Chat Output: Model is busy
+                            if (SERVER != null)
+                                SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback), false);
+                            return;
+                        }
+                        cooldowns.put("Chat", now);
+
+                        // Async-Request
+                        LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> applyDecision(server, decision))).exceptionally(ex -> {
+                            if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
+                            return null;
+                        });
                     }
-                    cooldowns.put("Chat", now);
+                    else {
+                        // Chat Output: Model is busy
+                        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
+                    }
+                }
 
-                    // Async-Request
-                    LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> applyDecision(server, decision))).exceptionally(ex -> {
-                    if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
-                    return null;
-                });
-            }
-        }
-            else {
-            // Chat Output: Model is busy
-            if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
-        }
         });
 
         // Log this!

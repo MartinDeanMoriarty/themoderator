@@ -95,7 +95,7 @@ public class LangConfig {
     public String feedback_67 = "Der Moderator hat seinen Avatar ge-spawned.";
     public String feedback_68 = "Der Moderator hat seinen Avatar de-spawned.";
     public String feedback_69 = "Achtung Moderator! Der Minecraft Server wird wie geplant einen neustart durchführen. Bitte informiere alle Spieler darüber.";
-    public String playerFeedback = "Der Moderator ist beschäftigt, frag ihn gleich noch mal.";
+    public String playerFeedback = "Der Moderator ist gerade beschäftigt.";
     // This is to format the system prompt
     public String systemPrompt = """
             System Regeln:
