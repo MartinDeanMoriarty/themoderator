@@ -19,7 +19,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
-
+import net.minecraft.registry.Registries;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
@@ -82,7 +82,7 @@ public class ModActions {
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
         player.damage(world, world.getDamageSources().generic(), amount);
-        return ConfigLoader.lang.feedback_40.formatted(playerName);
+        return ConfigLoader.lang.feedback_47.formatted(playerName, amount);
     }
 
     public static String killPlayer(ServerWorld world, String playerName) {
@@ -92,14 +92,22 @@ public class ModActions {
         return ConfigLoader.lang.feedback_40.formatted(playerName);
     }
 
-    public static String givePlayer(ServerWorld world, String playerName, Item item, int amount) {
+    public static String givePlayer(ServerWorld world, String playerName, String itemString, int amount) {
+        // Try to make Item identifier
+        Identifier itemId = Identifier.tryParse(itemString.contains(":") ? itemString : "minecraft:" + itemString);
+        if (itemId == null) {
+            return "Ungültiger Item-Identifier: " + itemString;
+        }
+        // Get item from Registry
+        Item item = Registries.ITEM.get(itemId);
+        // Get player
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
-        // Create ItemStack with Item
-        ItemStack stack = new ItemStack(item, amount); // How many items
-        // Try to put in inventory
+        // Build ItemStack
+        ItemStack stack = new ItemStack(item, amount);
+        // Put item into players inventory
         boolean success = player.getInventory().insertStack(stack);
-        // If inventory is full, drop in front of player
+        // Drop item if player inventory is full
         if (!success) {
             player.dropItem(stack, false);
         }

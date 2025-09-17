@@ -43,16 +43,16 @@ public class ModConfig {
     // Server without a whitelist should use this!
     // But it is possible to use both.
     public Boolean useBanlist = false;
-    //// Moderation schedule
+    //// === Moderation schedule ===
     public Boolean scheduledModeration = false;
     // Moderation schedule interval in minutes
     public Integer scheduleModerationInterval = 120;
     // Scheduled server provider restart announcement
     public Boolean scheduledServerRestart = false;
-    // Announcement schedule interval in minutes
-    public Integer serverRestartInterval = 10;
     // Automatic server provider restart at hour 0-23
     public Integer autoRestartHour = 4;
+    // Announce minutes before restart
+    public Integer serverRestartPrewarn = 5;
     //// === Logging ===
     // Moderation schedule logging
     public Boolean scheduleLogging = false;

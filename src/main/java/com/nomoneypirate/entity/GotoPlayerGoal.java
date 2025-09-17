@@ -1,13 +1,12 @@
 package com.nomoneypirate.entity;
 
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-
-import static com.nomoneypirate.events.ModEvents.applyDecision;
 
 public class GotoPlayerGoal  extends Goal {
     private final MobEntity mob;
@@ -43,7 +42,7 @@ public class GotoPlayerGoal  extends Goal {
                     // Mob is stuck or target unreachable
                     String feedback = ConfigLoader.lang.feedback_28;
                     // Feedback to llm
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
                 }
             } else {
                 stuckCounter = 0; // Reset when movement is detected
@@ -53,7 +52,7 @@ public class GotoPlayerGoal  extends Goal {
             // Mob has reached target
             String feedback = ConfigLoader.lang.feedback_29.formatted(target);
             // Feedback to llm
-            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
 
         }
     }

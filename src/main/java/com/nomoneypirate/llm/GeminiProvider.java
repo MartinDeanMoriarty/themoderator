@@ -56,7 +56,7 @@ public class GeminiProvider implements LlmProvider {
                             .get("text").getAsString().trim();
 
                     // Add action to context manager (cache)
-                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.feedback_62.formatted(content));
+                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.contextFeedback_02.formatted(content));
                     // return response
                     return LlmClient.parseDecision(content);
                 });

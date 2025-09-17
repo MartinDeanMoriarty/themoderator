@@ -3,7 +3,7 @@ package com.nomoneypirate;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.commands.ModCommands;
-import com.nomoneypirate.llm.LlmClient;
+import com.nomoneypirate.llm.OllamaProvider;
 import com.nomoneypirate.locations.LocationManager;
 import com.nomoneypirate.profiles.PlayerManager;
 import net.fabricmc.api.ModInitializer;
@@ -37,7 +37,7 @@ public class Themoderator implements ModInitializer {
         // Load Locations
         LocationManager.loadLocations();
         // Warmup ollama model
-        if (ConfigLoader.config.useOllama && ConfigLoader.config.ollamaWarmup) LlmClient.warmupModel();
+        if (ConfigLoader.config.useOllama && ConfigLoader.config.ollamaWarmup) OllamaProvider.warmupModel();
     }
 
 }

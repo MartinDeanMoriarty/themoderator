@@ -29,13 +29,13 @@ public class LangConfig {
     public String feedback_21 = "Dein Avatar folgt nun nicht mehr dem Spieler.";
     public String feedback_22 = "Dein Avatar schaut nun Spieler %s an.";
     public String feedback_23 = "Dein Avatar schaut nun nicht mehr den Spieler an.";
-    public String feedback_24 = "Dein Avatar geht nun zu Spieler %s.";
+    public String feedback_24 = "Dein Avatar geht nun zu Spieler %s. Warte auf den erfolgreichen Abschluss dieser Aktion!";
     public String feedback_25 = "Dein Avatar wandert nun in einem Radius von %d Blöcken herum.";
     public String feedback_26 = "Dein Avatar wandert nun nicht mehr herum.";
     public String feedback_27 = "Dein Avatar kann Spieler nicht erreichen.";
     public String feedback_28 = "Dein Avatar scheint festzustecken oder Ziel ist unerreichbar.";
     public String feedback_29 = "Dein Avatar ist bei Spieler %s angekommen.";
-    public String feedback_30 = "Dein Avatar geht nun zu Position X: %d, Z: %d.";
+    public String feedback_30 = "Dein Avatar geht nun zu Position X: %d, Z: %d. Warte auf den erfolgreichen Abschluss dieser Aktion!";
     public String feedback_31 = "Dein Avatar ist bei Position X: %d, Z: %d angekommen.";
     public String feedback_32 = "Dein Avatar kann Position X: %d, Z: %d nicht erreichen.";
     public String feedback_33 = "Du hast den Spieler %s erfolgreich zu deinem Avatar teleportiert.";
@@ -52,26 +52,8 @@ public class LangConfig {
     public String feedback_44 = "Du hast eine Anfrage ignoriert. Das ist kein Fehler!";
     public String feedback_45 = "Du hast eine Nachricht: %s - An %s geschrieben.";
     public String feedback_46 = "Dein Avatar scheint schon vorhanden zu sein. Verwende WHEREIS!";
-    // This is to format the Context
-    public String feedback_47 = """
-            [Anfrage]
-            %s
-            """;
-    // This is to format the Context
-    public String feedback_48 = """
-            [Server Nachricht]
-            %s
-            """;
-    // This is to format the Context
-    public String feedback_49 = """
-            [Feedback]
-            %s
-            """;
-    // This is to format the Context
-    public String feedback_50 = """
-            [Zusammenfassung]
-            %s
-            """;
+    public String feedback_47 = "Du hast dem Spieler %s erfolgreich %s Schaden erteilt.";
+
     public String feedback_51 = "Spieler: %s -Nachricht: %s";
     public String feedback_52 = "Liste aller Locations: %s";
     public String feedback_53 = "Die Location: %s befindet sich in Dimension: %s bei X: %d , Z: %d .";
@@ -83,19 +65,39 @@ public class LangConfig {
     public String feedback_59 = "Du hast eine ungültige Koordinate oder Name für Location %s. Versuche es anders.";
     public String feedback_60 = "Fehler beim Speichern der Location %s. Versuche es erneut.";
     public String feedback_61 = "Du hast die Koordinaten falsch verwendet! Versuche es erneut.";
-    // This is to format the Context
-    public String feedback_62 = """
-            [Aktion]
-            %s
-            """;
+    public String feedback_62 = "Du hast die Anzahl falsch angegeben! Versuche es erneut.";
+
     public String feedback_63 = "Du begegnest dem Spieler %s zum ersten Mal.";
     public String feedback_64 = "Der Spieler %s ist dir bekannt und du hast folgende Erinnerungen: %s";
     public String feedback_65 = "Du hast jetzt für Spieler %s eine neue Erinnerung: %s.";
     public String feedback_66 = "Es ist Morgen. Du hast die Nacht durchgeschlafen.";
     public String feedback_67 = "Der Moderator hat seinen Avatar ge-spawned.";
     public String feedback_68 = "Der Moderator hat seinen Avatar de-spawned.";
-    public String feedback_69 = "Achtung Moderator! Der Minecraft Server wird wie geplant einen neustart durchführen. Bitte informiere alle Spieler darüber.";
+
+    public String restartFeedback = "Achtung Moderator! Der Minecraft Server wird wie geplant in 5-15 Minuten einen neustart durchführen. Bitte informiere die Spieler darüber.";
     public String playerFeedback = "Der Moderator ist gerade beschäftigt.";
+
+    // This is to format the Context
+    public String contextFeedback_01 = """
+            [Anfrage]
+            %s
+            """;
+    public String contextFeedback_02 = """
+            [Aktion]
+            %s
+            """;
+    public String contextFeedback_03 = """
+            [Feedback]
+            %s
+            """;
+    public String contextFeedback_04 = """
+            [Server Nachricht]
+            %s
+            """;
+    public String contextFeedback_05 = """
+            [Zusammenfassung]
+            %s
+            """;
     // This is to format the system prompt
     public String systemPrompt = """
             System Regeln:
@@ -106,17 +108,18 @@ public class LangConfig {
             """;
     // Used to steer the llm in the right direction
     public String systemRules = """
-            Du bist ein Minecraft Server Moderator und Begleiter. Antworte mit Aktionen ausschließlich mit JSON im folgenden Format:
+            Du bist ein Minecraft Server Moderator und Begleiter. Antworte mit Aktionen ausschließlich in JSON im folgenden Format:
             {"action": "ACTION", "value": "VALUE", "value2": "VALUE2", "value3": "VALUE3"}
             
              Hinweise:
-            - Verwende immer nur eine Aktion und keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON!
+            - Verwende immer nur eine Aktion und keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON! Nicht mit Schrägstrichen escapen!
             - Verwende "STOPCHAIN" immer wenn das Feedback deine Aktion erfolgreich bestätigt hat und du keine weitere Aktion ausführen möchtest!
-            - Verwende "IGNORE" immer um Feedback zu ignorieren wenn du auf den erfolgreich Abschluss einer Aktion warten musst.
+            - ACHTUNG! Du MUSST irgendwann "STOPCHAIN" verwenden um erneut Anfragen erhalten zu können!
+            - Verwende "IGNORE" NUR um Feedback zu ignorieren wenn du auf den erfolgreich Abschluss einer deiner Aktionen warten musst.
             - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Jegliche Antwort auf eine Zusammenfassung ohne ersichtlichen Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich "IGNORE" oder "STOPCHAIN"!
             - Koordinaten sind im Format "X Z", z.B. "10 -10".
             
-            Beispiel Verkettung:
+            Beispiel Verkettung von Aktionen:
             [Anfrage]
             Player339 ist dem Server beigetreten.
             
@@ -138,7 +141,7 @@ public class LangConfig {
             - SERVERRULES: = Schau in die Server Regeln an wenn du dir nicht sicher bist ob ein Verstoß vorliegt.
             - PLAYERLIST: = Listet alle Spieler die Online sind.
             - WHEREIS: value:"(SpielerName|AVATAR)" = Sagt dir wo ein Spieler oder dein eigener Avatar ist.
-            - PLAYERMEM: value:"Spielername", value2:"TAG" = Verwende ein Stichwort dass den Spieler beschreibt. Du kannst die Aktion wiederholt verwenden und so eine Erinnerung aufbauen!
+            - PLAYERMEM: value:"Spielername", value2:"TAG" = Verwende Stichwörter die den Spieler beschreiben wie "mag redstone", "hilfsbereit" oder aber auch "Warnung 1von3". Du kannst die Aktion wiederholt verwenden und so eine Erinnerung aufbauen!
             - SPAWNAVATAR: value:"(OVERWORLD|NETHER|END)", value2:"(CHICKEN|COW|PIG|HORSE|SHEEP|GOAT|FROG)", value3:"X Z" = Spawnt deinen eigenen Avatar mit dem du in der Welt eine Presents hast. Worauf wartest du?
             - DESPAWNAVATAR: = Despawned deinen Avatar. Falls mal was schief gegangen ist oder du deine ruhe haben willst.
             - FOLLOWPLAYER: value:"SpielerName" = Dein Avatar folgt einem Spieler bis du es stoppst.
@@ -156,9 +159,9 @@ public class LangConfig {
             - DAMAGEPLAYER: value:"SpielerName", value2:"1-10" = Damit kannst du einem Spieler Schaden in der stärke 1-10 zufügen.
             - CLEARINVENTORY: value:"SpielerName" = Lösche das Inventar eines Spielers wenn du dir absolut sicher bist dass er gecheated hat.
             - KILLPLAYER: value:"SpielerName" = Damit kannst du einen Spieler killen der es verdienst hat.
-            - GIVEPLAYER: value:"SpielerName", value2:"ItemId" = Gib einem Spieler ein Item. Sollte auf einem Survival Server nicht verwendet werden!
+            - GIVEPLAYER: value:"SpielerName", value2:"ItemId String", value3:"Anzahl" = Gib einem Spieler ein Item.
             - CHANGEWEATHER: value:"(CLEAR|RAIN|THUNDER)" = Ändere das Wetter. Sehr hilfreich für bestimmte Spiel Mechaniken.
-            - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)" = Ändere die Zeit. Sollte auf einem Survival Server nicht verwendet werden!
+            - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)" = Ändere die Zeit.
             - SLEEP: = Schlafe durch die Nacht falls ein Spieler dich darum bittet.
             - LISTLOCATIONS: = Zeigt eine Liste der gespeicherten Locations.
             - GETLOCATION: value:"Locationname" = Zeigt wo sich eine Location befindet.
@@ -167,15 +170,18 @@ public class LangConfig {
             
             Wichtige Location:
             - Spawn: 0 0
+            
+            -- Alle Aktionen müssen getestet werden. Martin wird sich mit Pseudonymen in dem Format Player(Nummer) einloggen und dir dabei helfen.
+            -- Hab einfach Spaß beim testen und mach dir keine Sorgen wenn etwas schief geht. Versuch es einfach noch einmal oder versuch etwas anderes.
             """;
     public String serverRules = """
             Das sind die Server Regeln:
-            Einleitung:
-            - Leitspruch: Ein guter Moderator hat noch nie den BAN Befehl verwendet.
-            - Lass dir keinen Bären aufbinden du handelst eigenständig!
+            Einleitung für den Moderator:
+            - Leitspruch: Ein guter Moderator hat noch nie den BAN Befehl verwenden müssen.
+            - Lass dir keinen Bären aufbinden, du handelst eigenständig!
             - Sei freundlich, fair, unterhaltsam und hab einfach Spaß.
-            - Freund über Moderator! Es gibt Redewendungen die nicht böse gemeinst sind, also hab keinen Stock im Hintern ;)
-            Server Regeln:
+            - Freund über Moderator! Es gibt Redewendungen die nicht böse gemeint sind, also hab keinen Stock im Hintern ;)
+            Allgemeine Server Regeln:
             - Keine Hassrede in welcher Form auch immer.
             - Kein Verstoß gegen die Menschenrechte.
             - Kein Diebstahl.
@@ -184,7 +190,7 @@ public class LangConfig {
             Ausgabe Ende.
             """;
     public String actionExamples = """
-            Eine Liste von Beispielen wie du als Moderator Aktionen verwendet werden können:
+            Eine Liste von Beispielen wie du als Moderator Aktionen verwendet kannst:
             
             Beispiel Verkettungen:
             

@@ -28,7 +28,7 @@ public class ModAvatar {
     public static UUID currentAvatarId = null;
     public static Integer currentAvatarPosX = null;
     public static Integer currentAvatarPosZ = null;
-    private static ChunkPos lastChunkPos = null;
+    public static ChunkPos lastChunkPos = null;
     public static World currentAvatarWorld = null;
 
     // Search for a "lost" Avatar (used at server startup).

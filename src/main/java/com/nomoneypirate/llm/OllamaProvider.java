@@ -12,6 +12,9 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.nomoneypirate.Themoderator.LOGGER;
 
 public class OllamaProvider implements LlmProvider {
 
@@ -24,6 +27,8 @@ public class OllamaProvider implements LlmProvider {
     private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
     // Set llm model token limit
     static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
+    // Warm up
+    private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
 
     @Override
     public CompletableFuture<ModerationDecision> moderateAsync(LlmClient.ModerationType type, String arg) {
@@ -41,26 +46,57 @@ public class OllamaProvider implements LlmProvider {
         body.addProperty("stream", false);
         // Build http request
         HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                .build();
+        .uri(OLLAMA_URI)
+        .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+        .build();
         // Send http request and get response async
         return HTTP.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                .thenApply(resp -> {
-                    if (resp.statusCode() / 100 != 2) {
-                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
-                    }
-                    JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String responseText = json.get("response").getAsString().trim();
-                    // Separates action output for extra logging
-                    // PromptLogger.logPrompt(type, "Action: " + responseText, ConfigLoader.config.ollamaModel);
-                    // Add action to context manager (cache)
-                    contextManager.addMessage("recall", ConfigLoader.lang.feedback_62.formatted(responseText));
-                    // return response
-                    return LlmClient.parseDecision(responseText);
-                });
+        .thenApply(resp -> {
+            if (resp.statusCode() / 100 != 2) {
+                throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
+            }
+            JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
+            String responseText = json.get("response").getAsString().trim();
+            // Separates action output for extra logging
+            // PromptLogger.logPrompt(type, "Action: " + responseText, ConfigLoader.config.ollamaModel);
+            // Add action to context manager (cache)
+            contextManager.addMessage("recall", ConfigLoader.lang.contextFeedback_02.formatted(responseText));
+            // return response
+            return LlmClient.parseDecision(responseText);
+        });
+    }
+
+    // Used at mod init so ollama has a chance to be ready when the world is loaded
+    public static void warmupModel() {
+        if (isWarmedUp.get()) {
+            CompletableFuture.completedFuture(null);
+            return;
+        }
+        isWarmedUp.set(true);
+        // Log this!
+        if (ConfigLoader.config.modLogging) LOGGER.info("Ollama warm-up!");
+        // An empty prompt should just load a model
+        String prompt = " ";
+        JsonObject body = new JsonObject();
+        body.addProperty("model", MODEL);
+        body.addProperty("prompt", prompt);
+        body.addProperty("stream", false);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(OLLAMA_URI)
+                        .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
+                        .build();
+                HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
+            } catch (Exception e) {
+                if (ConfigLoader.config.modLogging) LOGGER.warn("Ollama Warmup failed: {}", e.getMessage());
+            }
+        });
     }
 
 }

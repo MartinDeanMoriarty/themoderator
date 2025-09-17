@@ -1,5 +1,6 @@
 package com.nomoneypirate.entity;
 
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import net.minecraft.entity.ai.goal.Goal;
@@ -7,8 +8,6 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.Vec3d;
-
-import static com.nomoneypirate.events.ModEvents.applyDecision;
 
 public class FollowPlayerGoal extends Goal {
     private final MobEntity mob;
@@ -46,7 +45,7 @@ public class FollowPlayerGoal extends Goal {
                 stuckCounter++;
                 if (stuckCounter > 40) {
                     String feedback = ConfigLoader.lang.feedback_28; // Avatar is stuck
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
                 }
             } else {
                 stuckCounter = 0;

@@ -3,11 +3,7 @@ package com.nomoneypirate.llm;
 import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
 import java.net.http.*;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.google.gson.*;
@@ -16,11 +12,6 @@ public final class LlmClient {
 
     private static final LlmProvider PROVIDER;
     private static final String SYSTEM_PROMPT = ConfigLoader.lang.systemPrompt;
-    private static final Gson GSON = new GsonBuilder().create();
-    // Ollama warm up
-    private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
-    private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
-    private static final String MODEL = ConfigLoader.config.ollamaModel;
 
     // Choose provider
     static {
@@ -126,11 +117,12 @@ public final class LlmClient {
                 case "STOPCHAIN" -> ModerationDecision.Action.STOPCHAIN;
                 default -> ModerationDecision.Action.IGNORE;
             };
+            // Return moderation decision
             return new ModerationDecision(action, value, value2, value3);
         } catch (Exception e) {
             // If the LLM does not strictly deliver JSON
             if (ConfigLoader.config.modLogging) LOGGER.info("Unclear output from llm model.");
-            // Feedback
+            // Return moderation decision
             String feedback = ConfigLoader.lang.feedback_12;
             return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"", "");
         }
@@ -143,37 +135,6 @@ public final class LlmClient {
             return matcher.group();
         }
         return "{}";
-    }
-
-    // Used at mod init so ollama has a chance to be ready when the world is loaded
-    public static void warmupModel() {
-        if (isWarmedUp.get()) {
-            CompletableFuture.completedFuture(null);
-            return;
-        }
-        isWarmedUp.set(true);
-        // Log this!
-        if (ConfigLoader.config.modLogging) LOGGER.info("Ollama warm-up!");
-        // An empty prompt should just load a model
-        String prompt = " ";
-        JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
-        body.addProperty("prompt", prompt);
-        body.addProperty("stream", false);
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                HttpRequest httpRequest = HttpRequest.newBuilder()
-                        .uri(OLLAMA_URI)
-                        .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
-                        .build();
-                HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
-            } catch (Exception e) {
-                if (ConfigLoader.config.modLogging) LOGGER.warn("Ollama Warmup failed: {}", e.getMessage());
-            }
-        });
     }
 
     private LlmClient() {}

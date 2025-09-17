@@ -4,11 +4,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
-import com.nomoneypirate.config.ConfigLoader;
-import com.google.gson.*;
-import net.minecraft.server.MinecraftServer;
 
-import static com.nomoneypirate.events.ModEvents.applyDecision;
+import com.nomoneypirate.actions.ModDecisions;
+import com.nomoneypirate.config.ConfigLoader;
+import net.minecraft.server.MinecraftServer;
 
 public class ModerationScheduler {
 
@@ -34,7 +33,7 @@ public class ModerationScheduler {
                 String keyWords = ConfigLoader.config.activationKeywords.toString();
                 if (feedback.isEmpty()) feedback = ConfigLoader.lang.feedback_38.formatted(keyWords);
                 // Send summary to llm
-                LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.feedback_50.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.contextFeedback_05.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
             }
 
             case "restart" -> {
@@ -42,11 +41,10 @@ public class ModerationScheduler {
                 int nextHour = LocalDateTime.now().getHour() + 1;
                 int nowMinutes = LocalDateTime.now().getMinute();
                 if (nextHour == ConfigLoader.config.autoRestartHour) {
-                    if (nowMinutes >= 49) {
-                        feedback = ConfigLoader.lang.feedback_69;
-                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                    if (nowMinutes >= 45) {
+                        feedback = ConfigLoader.lang.restartFeedback.formatted();
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec ->  ModDecisions.applyDecision(server, dec));
                     }
-
                 }
             }
 

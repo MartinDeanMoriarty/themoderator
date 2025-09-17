@@ -1,5 +1,6 @@
 package com.nomoneypirate.entity;
 
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.LlmClient;
 import net.minecraft.entity.ai.goal.Goal;
@@ -7,8 +8,6 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
-
-import static com.nomoneypirate.events.ModEvents.applyDecision;
 
 public class GotoPositionGoal  extends Goal {
     private final MobEntity mob;
@@ -45,7 +44,7 @@ public class GotoPositionGoal  extends Goal {
                 stuckCounter++;
                 if (stuckCounter > 40) {
                     String feedback = ConfigLoader.lang.feedback_28;
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(mob.getServer(), dec));
+                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(mob.getServer(), dec));
                 }
             } else {
                 stuckCounter = 0;
@@ -53,7 +52,7 @@ public class GotoPositionGoal  extends Goal {
         } else {
             mob.getNavigation().stop();
             String feedback = ConfigLoader.lang.feedback_31.formatted(posX, posZ);
-            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedback_49.formatted(feedback)).thenAccept(dec -> applyDecision(mob.getServer(), dec));
+            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(mob.getServer(), dec));
         }
     }
 
