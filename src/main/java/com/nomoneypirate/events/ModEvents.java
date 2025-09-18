@@ -16,6 +16,8 @@ import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,7 +93,7 @@ public class ModEvents {
                         // Avatar found message
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
                         // Chat Output: Moderator has an Avatar
-                        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_67),false);
+                        if (SERVER != null) SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_67).styled(style -> style.withColor(Formatting.YELLOW)),false);
                     }
                     // Only send if there is a feedback
                     // AND only send if it is a dedicated server
@@ -123,11 +125,6 @@ public class ModEvents {
                     return null;
                 });
             }
-            else {
-                // Chat Output: Model is busy
-                if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
-
-            }
         });
 
         // Intercept game messages for moderation scheduler
@@ -143,46 +140,46 @@ public class ModEvents {
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
 
-                MinecraftServer server = sender.getServer();
-                if (server == null) return;
+            MinecraftServer server = sender.getServer();
+            if (server == null) return;
 
-                String playerName = sender.getName().getString();
-                String content = message.getContent().getString();
+            String playerName = sender.getName().getString();
+            String content = message.getContent().getString();
+            String chatMessage = ConfigLoader.lang.contextFeedback_01.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
 
-                // Add all Chat Messages to moderation scheduler
-                String chatMessage = ConfigLoader.lang.contextFeedback_01.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
-                if (ConfigLoader.config.scheduledModeration) {
-                    ModerationScheduler.addMessage(chatMessage);
-                }
+            // Add all Chat Messages to moderation scheduler
+            if (ConfigLoader.config.scheduledModeration) {
+                ModerationScheduler.addMessage(chatMessage);
+            }
 
-                // Keyword-Check
-                if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
-                    if (!actionMode) {
-                        // Start action mode. Stopped with STOPCHAIN in ModDecisions
-                        actionMode = true;
-                        long now = System.currentTimeMillis();
-                        long last = cooldowns.getOrDefault("Chat", 0L);
+            // Keyword-Check
+            if (ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
+                if (!actionMode) {
+                    // Start action mode. Stopped with STOPCHAIN in ModDecisions.java
+                    actionMode = true;
 
-                        // Cooldown
-                        if (now - last < COOLDOWN_MILLIS) {
-                            // Chat Output: Model is busy
-                            if (SERVER != null)
-                                SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback), false);
-                            return;
-                        }
-                        cooldowns.put("Chat", now);
-
-                        // Async-Request
-                        LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> ModDecisions.applyDecision(server, decision))).exceptionally(ex -> {
-                            if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
-                            return null;
-                        });
-                    }
-                    else {
+                    // Cooldown
+                    long now = System.currentTimeMillis();
+                    long last = cooldowns.getOrDefault("Chat", 0L);
+                    if (now - last < COOLDOWN_MILLIS) {
                         // Chat Output: Model is busy
-                        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback),false);
+                        if (SERVER != null)
+                            server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback).styled(style -> style.withColor(Formatting.YELLOW)), false));
+                        return;
                     }
+                    cooldowns.put("Chat", now);
+
+                    // Async-Request
+                    LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> ModDecisions.applyDecision(server, decision))).exceptionally(ex -> {
+                        if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
+                        return null;
+                    });
                 }
+                else {
+                    // Chat Output: Model is busy. Use execute to put the message behind player message
+                    server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback).styled(style -> style.withColor(Formatting.YELLOW)), false));
+                }
+            }
 
         });
 

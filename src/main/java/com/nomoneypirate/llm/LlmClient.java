@@ -2,7 +2,7 @@ package com.nomoneypirate.llm;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
-import java.net.http.*;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -93,8 +93,8 @@ public final class LlmClient {
                 case "ACTIONEXAMPLES" -> ModerationDecision.Action.ACTIONEXAMPLES;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
-                case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORTPLAYER;
-                case "TELEPORTPOSITION" -> ModerationDecision.Action.TELEPORTPOSITION;
+                case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORT;
+                case "TELEPORTPOSITION" -> ModerationDecision.Action.TPTOPOSITION;
                 case "SPAWNAVATAR" -> ModerationDecision.Action.SPAWNAVATAR;
                 case "DESPAWNAVATAR" -> ModerationDecision.Action.DESPAWNAVATAR;
                 case "FOLLOWPLAYER" -> ModerationDecision.Action.FOLLOWPLAYER;

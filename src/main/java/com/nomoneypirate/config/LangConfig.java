@@ -150,8 +150,8 @@ public class LangConfig {
             - GOTOPOSITION: value:"X Z" = Dein Avatar get zu einer Koordinate.
             - MOVEAROUND: value:"BLOCKRADIUS" = Dein Avatar wandert in einem Radius umher bis du es stoppst.
             - STOPACTION: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" = Beendet alle oder eine bestimmte laufende Aktion.
-            - TELEPORTPLAYER: value:"(SpielerName|AVATAR)", value2:"(AVATAR|SpielerName)" = Teleportiert Deinen Avatar oder Spieler.
-            - TELEPORTPOSITION: value:"(SpielerName|AVATAR)", value2:"X Z" = Teleportiert Deinen Avatar oder Spieler zu Koordinaten.
+            - TELEPORT: value:"(SpielerName|AVATAR)", value2:"(AVATAR|SpielerName)" = Teleportiert Deinen Avatar oder Spieler.
+            - TPTOPOSITION: value:"(SpielerName|AVATAR)", value2:"X Z" = Teleportiert Deinen Avatar oder Spieler zu Koordinaten.
             - WHISPER: value:"SpielerName", value2:"TEXT" = Sendet TEXT an einen Spieler für vertrauliche Gespräche.
             - WARN: value:"SpielerName", value2:"TEXT" = Damit kannst du einen Spieler warmen.
             - KICK: value:"SpielerName", value2:"TEXT" = Damit kickst du einen Spieler.

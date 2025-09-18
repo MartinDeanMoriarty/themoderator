@@ -16,6 +16,7 @@ import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -79,7 +80,8 @@ public class ModDecisions {
 
             case CHAT -> {
                 // Chat Output
-                server.getPlayerManager().broadcast(Text.literal("The Moderator: " + decision.value()), false);
+                Text message = formatChatOutput(decision.value(), Formatting.WHITE);
+                server.getPlayerManager().broadcast(message, false);
                 // Feedback
                 String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value(), "Chat");
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
@@ -95,7 +97,7 @@ public class ModDecisions {
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case TELEPORTPLAYER -> {
+            case TELEPORT -> {
                 String feedback;
                 ServerWorld world = ModAvatar.findModeratorWorld(server);
                 if (world != null) {
@@ -110,7 +112,7 @@ public class ModDecisions {
                 }
             }
 
-            case TELEPORTPOSITION -> {
+            case TPTOPOSITION -> {
                 String feedback;
                 ServerWorld world = ModAvatar.findModeratorWorld(server);
                 if (world != null) {
@@ -240,62 +242,6 @@ public class ModDecisions {
                 }
                 // Feedback
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-            }
-
-            case DAMAGEPLAYER -> {
-                String feedback;
-                ServerWorld world = ModAvatar.findModeratorWorld(server);
-                if (world != null) {
-                    // Parse number
-                    Number num = parseNumber(decision.value2(), "DAMAGEPLAYER");
-                    int amount = num.number();
-                    if (num.valid()) {
-                        feedback = ModActions.damagePlayer(world, decision.value(), amount);
-                    }
-                    else {
-                        feedback = ConfigLoader.lang.feedback_62;
-                    }
-                    // Feedback
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                }
-            }
-
-            case CLEARINVENTORY -> {
-                String feedback;
-                ServerWorld world = ModAvatar.findModeratorWorld(server);
-                if (world != null) {
-                    feedback = ModActions.clearInventory(world, decision.value());
-                    // Feedback
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                }
-            }
-
-            case KILLPLAYER -> {
-                String feedback;
-                ServerWorld world = ModAvatar.findModeratorWorld(server);
-                if (world != null) {
-                    feedback = ModActions.killPlayer(world, decision.value());
-                    // Feedback
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                }
-            }
-
-            case GIVEPLAYER -> {
-                String feedback;
-                ServerWorld world = ModAvatar.findModeratorWorld(server);
-                if (world != null) {
-                    // Parse number
-                    Number num = parseNumber(decision.value3(), "DAMAGEPLAYER");
-                    int amount = num.number();
-                    if (num.valid()) {
-                        feedback = ModActions.givePlayer(world, decision.value(), decision.value2(), amount);
-                    }
-                    else {
-                        feedback = ConfigLoader.lang.feedback_62;
-                    }
-                    // Feedback
-                    LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
-                }
             }
 
             case CHANGEWEATHER -> {
@@ -439,7 +385,7 @@ public class ModDecisions {
                 ).thenAccept(dec -> applyDecision(server, dec));
             }
 
-            case WHISPER, WARN, KICK, BAN, FOLLOWPLAYER, LOOKATPLAYER, GOTOPLAYER -> {
+            case WHISPER, WARN, KICK, BAN, FOLLOWPLAYER, LOOKATPLAYER, GOTOPLAYER, DAMAGEPLAYER, CLEARINVENTORY, KILLPLAYER, GIVEPLAYER -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
@@ -449,24 +395,29 @@ public class ModDecisions {
 
                 switch (decision.action()) {
                     case WHISPER -> {
-                        player.sendMessage(Text.literal("The Moderator: " + decision.value2()),false);
+                        // Build Text
+                        Text message = formatChatOutput(decision.value2(), Formatting.WHITE);
+                        player.sendMessage(Text.literal(String.valueOf(message)),false);
+                        // Feedback
                         String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value2(), decision.value());
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                     }
 
                     case WARN -> {
-                        player.sendMessage(
-                                Text.literal("The Moderator: " + decision.value2()),false
-                        );
+                        // Build Text
+                        Text message = formatChatOutput(decision.value2(), Formatting.RED);
+                        server.getPlayerManager().broadcast(message, false);
+                        // Feedback
                         String feedback = ConfigLoader.lang.feedback_08.formatted(decision.value(), decision.value2());
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                         if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
                     }
 
                     case KICK -> {
-                        player.networkHandler.disconnect(
-                                Text.literal("The Moderator: " + decision.value2())
-                        );
+                        // Build Text
+                        Text message = formatChatOutput(decision.value2(), Formatting.RED);
+                        player.networkHandler.disconnect(Text.literal(String.valueOf(message)));
+                        // Feedback
                         String feedback = ConfigLoader.lang.feedback_09.formatted(decision.value(), decision.value2());
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                         if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
@@ -500,15 +451,72 @@ public class ModDecisions {
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                     }
 
+                    case DAMAGEPLAYER -> {
+                        String feedback;
+                        ServerWorld world = ModAvatar.findModeratorWorld(server);
+                        if (world != null) {
+                            // Parse number
+                            Number num = parseNumber(decision.value2(), "DAMAGEPLAYER");
+                            int amount = num.number();
+                            if (num.valid()) {
+                                feedback = ModActions.damagePlayer(world, decision.value(), amount);
+                            }
+                            else {
+                                feedback = ConfigLoader.lang.feedback_62;
+                            }
+                            // Feedback
+                            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                        }
+                    }
+
+                    case CLEARINVENTORY -> {
+                        String feedback;
+                        ServerWorld world = ModAvatar.findModeratorWorld(server);
+                        if (world != null) {
+                            feedback = ModActions.clearInventory(world, decision.value());
+                            // Feedback
+                            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                        }
+                    }
+
+                    case KILLPLAYER -> {
+                        String feedback;
+                        ServerWorld world = ModAvatar.findModeratorWorld(server);
+                        if (world != null) {
+                            feedback = ModActions.killPlayer(world, decision.value());
+                            // Feedback
+                            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                        }
+                    }
+
+                    case GIVEPLAYER -> {
+                        String feedback;
+                        ServerWorld world = ModAvatar.findModeratorWorld(server);
+                        if (world != null) {
+                            // Parse number
+                            Number num = parseNumber(decision.value3(), "DAMAGEPLAYER");
+                            int amount = num.number();
+                            if (num.valid()) {
+                                feedback = ModActions.givePlayer(world, decision.value(), decision.value2(), amount);
+                            }
+                            else {
+                                feedback = ConfigLoader.lang.feedback_62;
+                            }
+                            // Feedback
+                            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                        }
+                    }
+
                     case BAN -> {
                         if (!ConfigLoader.config.allowBanCommand) {
                             String feedback = ConfigLoader.lang.feedback_10;
                             LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                             return;
                         }
-                        player.networkHandler.disconnect(
-                                Text.literal("The Moderator: " + decision.value2())
-                        );
+                        // Build Text
+                        Text message = formatChatOutput(decision.value2(), Formatting.DARK_RED);
+                        player.networkHandler.disconnect(Text.literal(String.valueOf(message)));
+
                         if (ConfigLoader.config.useWhitelist) {
                             // Remove Player of the whitelist
                             WhitelistEntry entry = server.getPlayerManager().getWhitelist().get(player.getGameProfile());
@@ -600,6 +608,13 @@ public class ModDecisions {
 
         }
         return new Number(number, valid);
+    }
+
+    private static Text formatChatOutput(String text, Formatting color) {
+        // Build Text
+        return Text.empty()
+                .append(Text.literal("The Moderator: ").styled(style -> style.withColor(Formatting.BLUE)))
+                .append(Text.literal(text).styled(style -> style.withColor(color)));
     }
     
 }
