@@ -32,6 +32,8 @@ public class ModConfig {
     public Integer responseTimeout = 30;
     // The name of the language file
     public String languageFileName = "themoderator_de";
+    ////  The name of the moderator
+    public String moderatorName = "The Moderator";
     //// Activation keywords
     public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
     // Request cooldown in seconds

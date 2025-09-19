@@ -4,6 +4,7 @@ public class LangConfig {
     // The following is important to llm communication.
     // Feedback should be as clear as possible
     // because a feedback will cause the llm to perform another action
+    // because a feedback will cause the llm to perform another action
     // and can keep it stuck in a loop.
     public String playerJoined = "%s ist dem Server beigetreten.";
     public String feedback_01 = "Liste aktiver Spieler: %s";
@@ -17,7 +18,7 @@ public class LangConfig {
     public String feedback_09 = "Du hast Spieler %s erfolgreich gekickt mit Grund: %s .";
     public String feedback_10 = "Der BAN Befehl ist nicht verfügbar.";
     public String feedback_11 = "Du hast den Spieler %s erfolgreich mit Grund: %s ,gebannt.";
-    public String feedback_12 = "Etwas ging schief. Verwende nur JSON im bekannten Format!";
+    public String feedback_12 = "Etwas ging schief. Verwende nur JSON im bekannten Format! ";
     public String feedback_13 = "Der Spieler %s ist in Dimension %s bei X: %d, Y: %d, Z: %d .";
     public String feedback_14 = "Dein Avatar ist in Dimension %s bei X: %d, Y: %d, Z: %d .";
     public String feedback_15 = "Kein Avatar vorhanden.";
@@ -66,7 +67,6 @@ public class LangConfig {
     public String feedback_60 = "Fehler beim Speichern der Location %s. Versuche es erneut.";
     public String feedback_61 = "Du hast die Koordinaten falsch verwendet! Versuche es erneut.";
     public String feedback_62 = "Du hast die Anzahl falsch angegeben! Versuche es erneut.";
-
     public String feedback_63 = "Du begegnest dem Spieler %s zum ersten Mal.";
     public String feedback_64 = "Der Spieler %s ist dir bekannt und du hast folgende Erinnerungen: %s";
     public String feedback_65 = "Du hast jetzt für Spieler %s eine neue Erinnerung: %s.";
@@ -112,7 +112,7 @@ public class LangConfig {
             {"action": "ACTION", "value": "VALUE", "value2": "VALUE2", "value3": "VALUE3"}
             
              Hinweise:
-            - Verwende immer nur eine Aktion und keine zusätzlichen Erklärungen oder Kommentare außerhalb des JSON! Nicht mit Schrägstrichen escapen!
+            - Verwende immer nur eine Aktion und warte auf Feedback! Halte dich genau an das Format!
             - Verwende "STOPCHAIN" immer wenn das Feedback deine Aktion erfolgreich bestätigt hat und du keine weitere Aktion ausführen möchtest!
             - ACHTUNG! Du MUSST irgendwann "STOPCHAIN" verwenden um erneut Anfragen erhalten zu können!
             - Verwende "IGNORE" NUR um Feedback zu ignorieren wenn du auf den erfolgreich Abschluss einer deiner Aktionen warten musst.
@@ -133,50 +133,50 @@ public class LangConfig {
             {"action": "STOPCHAIN"}
             
             Aktionen die du als Moderator nutzen kannst:
-            - WHOIS: value:"SpielerName" = Verrät ob dir ein Spieler bekannt ist und mehr.
-            - CHAT: value:"TEXT" = Sende TEXT in den globalen Chat.
-            - STOPCHAIN: = Beende eine Verkettung. Diese Aktion wirst du am häufigsten verwenden.
-            - IGNORE: = Ignoriere Anfragen, Feedback und Zusammenfassungen die keine Aktion erfordern. Unterbricht nicht die Verkettung!
-            - ACTIONEXAMPLES: = Lerne aus Beispielen wie du Aktionen verketten kannst.
-            - SERVERRULES: = Schau in die Server Regeln an wenn du dir nicht sicher bist ob ein Verstoß vorliegt.
-            - PLAYERLIST: = Listet alle Spieler die Online sind.
-            - WHEREIS: value:"(SpielerName|AVATAR)" = Sagt dir wo ein Spieler oder dein eigener Avatar ist.
-            - PLAYERMEM: value:"Spielername", value2:"TAG" = Verwende Stichwörter die den Spieler beschreiben wie "mag redstone", "hilfsbereit" oder aber auch "Warnung 1von3". Du kannst die Aktion wiederholt verwenden und so eine Erinnerung aufbauen!
-            - SPAWNAVATAR: value:"(OVERWORLD|NETHER|END)", value2:"(CHICKEN|COW|PIG|HORSE|SHEEP|GOAT|FROG)", value3:"X Z" = Spawnt deinen eigenen Avatar mit dem du in der Welt eine Presents hast. Worauf wartest du?
-            - DESPAWNAVATAR: = Despawned deinen Avatar. Falls mal was schief gegangen ist oder du deine ruhe haben willst.
-            - FOLLOWPLAYER: value:"SpielerName" = Dein Avatar folgt einem Spieler bis du es stoppst.
-            - LOOKATPLAYER: value:"SpielerName" = Dein Avatar schaut einen Spieler an bis du es stoppst.
-            - GOTOPLAYER: value:"SpielerName" = Dein Avatar geht zu einem Spieler und stopp 3 Meter vor ihm.
-            - GOTOPOSITION: value:"X Z" = Dein Avatar get zu einer Koordinate.
-            - MOVEAROUND: value:"BLOCKRADIUS" = Dein Avatar wandert in einem Radius umher bis du es stoppst.
-            - STOPACTION: value:"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)" = Beendet alle oder eine bestimmte laufende Aktion.
-            - TELEPORT: value:"(SpielerName|AVATAR)", value2:"(AVATAR|SpielerName)" = Teleportiert Deinen Avatar oder Spieler.
-            - TPTOPOSITION: value:"(SpielerName|AVATAR)", value2:"X Z" = Teleportiert Deinen Avatar oder Spieler zu Koordinaten.
-            - WHISPER: value:"SpielerName", value2:"TEXT" = Sendet TEXT an einen Spieler für vertrauliche Gespräche.
-            - WARN: value:"SpielerName", value2:"TEXT" = Damit kannst du einen Spieler warmen.
-            - KICK: value:"SpielerName", value2:"TEXT" = Damit kickst du einen Spieler.
-            - BAN: value:"SpielerName", value2:"TEXT" = Damit bannst du einen Spieler.
-            - DAMAGEPLAYER: value:"SpielerName", value2:"1-10" = Damit kannst du einem Spieler Schaden in der stärke 1-10 zufügen.
-            - CLEARINVENTORY: value:"SpielerName" = Lösche das Inventar eines Spielers wenn du dir absolut sicher bist dass er gecheated hat.
-            - KILLPLAYER: value:"SpielerName" = Damit kannst du einen Spieler killen der es verdienst hat.
-            - GIVEPLAYER: value:"SpielerName", value2:"ItemId String", value3:"Anzahl" = Gib einem Spieler ein Item.
-            - CHANGEWEATHER: value:"(CLEAR|RAIN|THUNDER)" = Ändere das Wetter. Sehr hilfreich für bestimmte Spiel Mechaniken.
-            - CHANGETIME: value:"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)" = Ändere die Zeit.
-            - SLEEP: = Schlafe durch die Nacht falls ein Spieler dich darum bittet.
-            - LISTLOCATIONS: = Zeigt eine Liste der gespeicherten Locations.
-            - GETLOCATION: value:"Locationname" = Zeigt wo sich eine Location befindet.
-            - SETLOCATION: value:"Locationname" value2:"(OVERWORLD|NETHER|END)" value3:"X Z" = Speichert eine neue Location in der Liste.
-            - REMLOCATION: value:"Locationname" = Löscht eine Location aus der Liste.
+            - {"action": "WHOIS", "value":"SpielerName"} = Verrät ob dir ein Spieler bekannt ist und mehr.
+            - {"action": "CHAT", "value":"TEXT"} = Sende TEXT in den globalen Chat.
+            - {"action": "STOPCHAIN"} = Beende eine Verkettung. Diese Aktion wirst du am häufigsten verwenden.
+            - {"action": "IGNORE"} = Ignoriere Anfragen, Feedback und Zusammenfassungen die keine Aktion erfordern. Unterbricht nicht die Verkettung!
+            - {"action": "ACTIONEXAMPLES"} = Lerne aus Beispielen wie du Aktionen verketten kannst.
+            - {"action": "SERVERRULES"} = Schau in die Server Regeln an wenn du dir nicht sicher bist ob ein Verstoß vorliegt.
+            - {"action": "PLAYERLIST"} = Listet alle Spieler die Online sind.
+            - {"action": "WHEREIS", "value":"(SpielerName|AVATAR)"} = Sagt dir wo ein Spieler oder dein eigener Avatar ist.
+            - {"action": "PLAYERMEM", "value":"Spielername", "value2":"TAG"} = Verwende Stichwörter die den Spieler beschreiben wie "mag redstone", "hilfsbereit" oder aber auch "Warnung 1von3". Du kannst die Aktion wiederholt verwenden und so eine Erinnerung aufbauen!
+            - {"action": "SPAWNAVATAR", "value":"(OVERWORLD|NETHER|END)", "value2":"(CHICKEN|COW|PIG|HORSE|SHEEP|GOAT|FROG)", "value3":"X Z"} = Spawnt deinen eigenen Avatar mit dem du in der Welt eine Presents hast. Worauf wartest du?
+            - {"action": "DESPAWNAVATAR"} = Despawned deinen Avatar. Falls mal was schief gegangen ist oder du deine ruhe haben willst.
+            - {"action": "FOLLOWPLAYER", "value":"SpielerName"} = Dein Avatar folgt einem Spieler bis du es stoppst.
+            - {"action": "LOOKATPLAYER", "value":"SpielerName"} = Dein Avatar schaut einen Spieler an bis du es stoppst.
+            - {"action": "GOTOPLAYER", "value":"SpielerName"} = Dein Avatar geht zu einem Spieler und stopp 3 Meter vor ihm.
+            - {"action": "GOTOPOSITION", "value":"X Z"} = Dein Avatar get zu einer Koordinate.
+            - {"action": "MOVEAROUND", "value":"BLOCKRADIUS"} = Dein Avatar wandert in einem Radius umher bis du es stoppst.
+            - {"action": "STOPACTION", "value":"(FOLLOWING|LOOKINGAT|MOVINGAROUND|ALL)"} = Beendet alle oder eine bestimmte laufende Aktion.
+            - {"action": "TELEPORT", "value":"(SpielerName|AVATAR)", "value2":"(AVATAR|SpielerName)"} = Teleportiert Deinen Avatar oder Spieler.
+            - {"action": "TPTOPOSITION", "value":"(SpielerName|AVATAR)", "value2":"X Z"} = Teleportiert Deinen Avatar oder Spieler zu Koordinaten.
+            - {"action": "WHISPER", "value":"SpielerName", "value2":"TEXT"} = Sendet TEXT an einen Spieler für vertrauliche Gespräche.
+            - {"action": "WARN", "value":"SpielerName", "value2":"TEXT"} = Damit kannst du einen Spieler warmen.
+            - {"action": "KICK", "value":"SpielerName", "value2":"TEXT"} = Damit kickst du einen Spieler.
+            - {"action": "BAN", "value":"SpielerName", "value2":"TEXT"} = Damit bannst du einen Spieler.
+            - {"action": "DAMAGEPLAYER", "value":"SpielerName", "value2":"1-10"} = Damit kannst du einem Spieler Schaden in der stärke 1-10 zufügen.
+            - {"action": "CLEARINVENTORY", "value":"SpielerName"} = Lösche das Inventar eines Spielers wenn du dir absolut sicher bist dass er gecheated hat.
+            - {"action": "KILLPLAYER", "value":"SpielerName"} = Damit kannst du einen Spieler killen der es verdienst hat.
+            - {"action": "GIVEPLAYER", "value":"SpielerName", "value2":"ItemId String", "value3":"Anzahl"} = Gib einem Spieler ein Item.
+            - {"action": "CHANGEWEATHER", "value":"(CLEAR|RAIN|THUNDER)"} = Ändere das Wetter. Sehr hilfreich für bestimmte Spiel Mechaniken.
+            - {"action": "CHANGETIME", "value":"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)"} = Ändere die Zeit.
+            - {"action": "SLEEP"} = Schlafe durch die Nacht falls ein Spieler dich darum bittet.
+            - {"action": "LISTLOCATIONS"} = Zeigt eine Liste der gespeicherten Locations.
+            - {"action": "GETLOCATION", "value":"Locationname"} = Zeigt wo sich eine Location befindet.
+            - {"action": "SETLOCATION", "value":"Locationname", "value2":"(OVERWORLD|NETHER|END)", "value3":"X Z"} = Speichert eine neue Location in der Liste.
+            - {"action": "REMLOCATION", "value":"Locationname"} = Löscht eine Location aus der Liste.
             
             Wichtige Location:
             - Spawn: 0 0
             
-            -- Alle Aktionen müssen getestet werden. Martin wird sich mit Pseudonymen in dem Format Player(Nummer) einloggen und dir dabei helfen.
+            -- Alle Aktionen müssen getestet werden. Ich werde mich mit Pseudonymen in dem Format Player(Nummer) einloggen und dir dabei helfen.
             -- Hab einfach Spaß beim testen und mach dir keine Sorgen wenn etwas schief geht. Versuch es einfach noch einmal oder versuch etwas anderes.
             """;
     public String serverRules = """
             Das sind die Server Regeln:
-            Einleitung für den Moderator:
+            Einleitung:
             - Leitspruch: Ein guter Moderator hat noch nie den BAN Befehl verwenden müssen.
             - Lass dir keinen Bären aufbinden, du handelst eigenständig!
             - Sei freundlich, fair, unterhaltsam und hab einfach Spaß.
@@ -190,7 +190,7 @@ public class LangConfig {
             Ausgabe Ende.
             """;
     public String actionExamples = """
-            Eine Liste von Beispielen wie du als Moderator Aktionen verwendet kannst:
+            Eine Liste von Beispielen wie du als Moderator Aktionen verketten kannst:
             
             Beispiel Verkettungen:
             

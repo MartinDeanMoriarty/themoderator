@@ -1,5 +1,6 @@
 package com.nomoneypirate.entity;
 
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.mixin.MobEntityAccessor;
@@ -12,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -34,7 +36,7 @@ public class ModAvatar {
     // Search for a "lost" Avatar (used at server startup).
     public static boolean searchModeratorAvatar(ServerWorld world) {
         boolean found = false;
-        // Search Mob named "The Moderator"
+        // Search Mob named "ConfigLoader.config.moderatorName"
         Entity entity = findModeratorEntity(world);
             if (entity != null) {
                 currentAvatarId = entity.getUuid();
@@ -113,16 +115,17 @@ public class ModAvatar {
         //         entity.getCommandSource(world), "data merge entity " + entity.getUuidAsString() + " {NoAI:1b}"
         // );
         // CustomName
-        entity.setCustomName(Text.literal("The Moderator"));
+        entity.setCustomName(Text.literal(ConfigLoader.config.moderatorName));
         entity.setCustomNameVisible(true);
         // PLay a sound
         entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
         // Chat Output: Moderator has an Avatar
-        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_67),false);
+        Text formatted = ModDecisions.formatChatOutput("", ConfigLoader.lang.feedback_67, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)),false);
         return ConfigLoader.lang.feedback_03.formatted(currentAvatarWorld, currentAvatarType, currentAvatarPosX, currentAvatarPosZ);
     }
 
-    // This will remove a registered Avatar and a lingering mob with the name "The Moderator" as well
+    // This will remove a registered Avatar and a lingering mob with the name "ConfigLoader.config.moderatorName" as well
     public static String despawnModeratorAvatar(ServerWorld world) {
         boolean found = false;
         // Remove registered Mob
@@ -137,10 +140,10 @@ public class ModAvatar {
             currentAvatarPosZ = null;
             currentAvatarWorld = null;
         } else {
-            // Remove every Mob named "The Moderator"
+            // Remove every Mob named "ConfigLoader.config.moderatorName"
             for (Entity entity : world.iterateEntities()) {
                 if (entity.hasCustomName() &&
-                        "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
+                        ConfigLoader.config.moderatorName.equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
                         !(entity instanceof PlayerEntity)) {
                     // PLay a sound
                     entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
@@ -150,7 +153,8 @@ public class ModAvatar {
             }
         }
         // Chat Output: Moderator despawned Avatar
-        if (found && ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_68),false);
+        Text formatted = ModDecisions.formatChatOutput("", ConfigLoader.lang.feedback_68, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+        if (found && ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)),false);
         if (!found) return ConfigLoader.lang.feedback_06; else return ConfigLoader.lang.feedback_05;
     }
 
@@ -168,7 +172,7 @@ public class ModAvatar {
     public static Entity findModeratorEntity(ServerWorld world) {
         for (Entity entity : world.iterateEntities()) {
             if (entity.hasCustomName() &&
-                    "The Moderator".equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
+                    ConfigLoader.config.moderatorName.equals(Objects.requireNonNull(entity.getCustomName()).getString()) &&
                     !(entity instanceof PlayerEntity)) {
                 return entity;
             }

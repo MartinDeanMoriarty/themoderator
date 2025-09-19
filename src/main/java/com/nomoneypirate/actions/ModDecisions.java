@@ -80,7 +80,7 @@ public class ModDecisions {
 
             case CHAT -> {
                 // Chat Output
-                Text message = formatChatOutput(decision.value(), Formatting.WHITE);
+                Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value(), Formatting.BLUE, Formatting.WHITE, false, false, false);
                 server.getPlayerManager().broadcast(message, false);
                 // Feedback
                 String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value(), "Chat");
@@ -396,7 +396,7 @@ public class ModDecisions {
                 switch (decision.action()) {
                     case WHISPER -> {
                         // Build Text
-                        Text message = formatChatOutput(decision.value2(), Formatting.WHITE);
+                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.WHITE, false, false, false);
                         player.sendMessage(Text.literal(String.valueOf(message)),false);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value2(), decision.value());
@@ -405,7 +405,7 @@ public class ModDecisions {
 
                     case WARN -> {
                         // Build Text
-                        Text message = formatChatOutput(decision.value2(), Formatting.RED);
+                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.RED, false, true, false);
                         server.getPlayerManager().broadcast(message, false);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_08.formatted(decision.value(), decision.value2());
@@ -415,7 +415,7 @@ public class ModDecisions {
 
                     case KICK -> {
                         // Build Text
-                        Text message = formatChatOutput(decision.value2(), Formatting.RED);
+                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.RED, true, false, true);
                         player.networkHandler.disconnect(Text.literal(String.valueOf(message)));
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_09.formatted(decision.value(), decision.value2());
@@ -514,7 +514,7 @@ public class ModDecisions {
                             return;
                         }
                         // Build Text
-                        Text message = formatChatOutput(decision.value2(), Formatting.DARK_RED);
+                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.DARK_RED, true, false, true);
                         player.networkHandler.disconnect(Text.literal(String.valueOf(message)));
 
                         if (ConfigLoader.config.useWhitelist) {
@@ -552,7 +552,7 @@ public class ModDecisions {
         GameProfile profile = player.getGameProfile();
         Date now = new Date();
         String reason = decision.value2();
-        String source = "[The Moderator]";
+        String source = "[" + ConfigLoader.config.moderatorName + "]";
         //Date expiry = null; // null = permanent
 
         return new BannedPlayerEntry(
@@ -610,11 +610,12 @@ public class ModDecisions {
         return new Number(number, valid);
     }
 
-    private static Text formatChatOutput(String text, Formatting color) {
+    public static Text formatChatOutput(String prefix, String text, Formatting prefixColor, Formatting textColor, boolean bold, boolean italic, boolean underline) {
         // Build Text
+        if (prefix.isEmpty()) prefix = "->";
         return Text.empty()
-                .append(Text.literal("The Moderator: ").styled(style -> style.withColor(Formatting.BLUE)))
-                .append(Text.literal(text).styled(style -> style.withColor(color)));
+                .append(Text.literal(prefix).styled(style -> style.withColor(prefixColor)))
+                .append(Text.literal(text).styled(style -> style.withColor(textColor).withBold(bold).withItalic(italic).withUnderline(underline)));
     }
-    
+
 }

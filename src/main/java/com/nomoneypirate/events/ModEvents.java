@@ -72,7 +72,7 @@ public class ModEvents {
             // Check for the moderator avatar at runtime
             ServerWorld world = findModeratorWorld(server);
             if (checked && currentAvatarId != null) {
-                // Pull a chunk loader along with the Avatar if there is an Avatar
+                // Pull a chunk loader along with the avatar if there is an avatar
                 if (world != null) {
                     Entity moderator = findModeratorEntity(world);
                     if (moderator != null) {
@@ -92,11 +92,9 @@ public class ModEvents {
                     if (searchModeratorAvatar(world)) {
                         // Avatar found message
                         feedback.append(" Avatar: ").append(currentModeratorAvatar());
-                        // Chat Output: Moderator has an Avatar
-                        if (SERVER != null) SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.feedback_67).styled(style -> style.withColor(Formatting.YELLOW)),false);
                     }
                     // Only send if there is a feedback
-                    // AND only send if it is a dedicated server
+                    // AND only send if it is a dedicated server because on singleplayer it collides with the player join message
                      if (!feedback.isEmpty() && server instanceof DedicatedServer) {
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback.toString())).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
                     }
@@ -146,6 +144,7 @@ public class ModEvents {
             String playerName = sender.getName().getString();
             String content = message.getContent().getString();
             String chatMessage = ConfigLoader.lang.contextFeedback_01.formatted(ConfigLoader.lang.feedback_51.formatted(playerName, content));
+            Text formatted = ModDecisions.formatChatOutput("", ConfigLoader.lang.playerFeedback, Formatting.BLUE, Formatting.YELLOW, false, true, false);
 
             // Add all Chat Messages to moderation scheduler
             if (ConfigLoader.config.scheduledModeration) {
@@ -162,9 +161,9 @@ public class ModEvents {
                     long now = System.currentTimeMillis();
                     long last = cooldowns.getOrDefault("Chat", 0L);
                     if (now - last < COOLDOWN_MILLIS) {
-                        // Chat Output: Model is busy
                         if (SERVER != null)
-                            server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback).styled(style -> style.withColor(Formatting.YELLOW)), false));
+                            // Chat Output: Model is busy. Use execute to put the message behind player message
+                            server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)), false));
                         return;
                     }
                     cooldowns.put("Chat", now);
@@ -177,7 +176,7 @@ public class ModEvents {
                 }
                 else {
                     // Chat Output: Model is busy. Use execute to put the message behind player message
-                    server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(ConfigLoader.lang.playerFeedback).styled(style -> style.withColor(Formatting.YELLOW)), false));
+                    server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)), false));
                 }
             }
 
