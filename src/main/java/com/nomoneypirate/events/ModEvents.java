@@ -162,8 +162,8 @@ public class ModEvents {
                     long last = cooldowns.getOrDefault("Chat", 0L);
                     if (now - last < COOLDOWN_MILLIS) {
                         if (SERVER != null)
-                            // Chat Output: Model is busy. Use execute to put the message behind player message
-                            server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)), false));
+                            // Chat Output: Model is busy. Use execute to try to put the message behind player message
+                            server.execute(() -> SERVER.getPlayerManager().broadcast(formatted, false));
                         return;
                     }
                     cooldowns.put("Chat", now);
@@ -176,7 +176,7 @@ public class ModEvents {
                 }
                 else {
                     // Chat Output: Model is busy. Use execute to put the message behind player message
-                    server.execute(() -> SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)), false));
+                    server.execute(() -> SERVER.getPlayerManager().broadcast(formatted, false));
                 }
             }
 

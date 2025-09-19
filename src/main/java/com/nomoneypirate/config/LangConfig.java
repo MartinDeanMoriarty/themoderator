@@ -33,7 +33,7 @@ public class LangConfig {
     public String feedback_24 = "Dein Avatar geht nun zu Spieler %s. Warte auf den erfolgreichen Abschluss dieser Aktion!";
     public String feedback_25 = "Dein Avatar wandert nun in einem Radius von %d Blöcken herum.";
     public String feedback_26 = "Dein Avatar wandert nun nicht mehr herum.";
-    public String feedback_27 = "Dein Avatar kann Spieler nicht erreichen.";
+    public String feedback_27 = "Dein Avatar kann Spieler %s nicht erreichen.";
     public String feedback_28 = "Dein Avatar scheint festzustecken oder Ziel ist unerreichbar.";
     public String feedback_29 = "Dein Avatar ist bei Spieler %s angekommen.";
     public String feedback_30 = "Dein Avatar geht nun zu Position X: %d, Z: %d. Warte auf den erfolgreichen Abschluss dieser Aktion!";

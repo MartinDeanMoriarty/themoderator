@@ -93,8 +93,8 @@ public final class LlmClient {
                 case "ACTIONEXAMPLES" -> ModerationDecision.Action.ACTIONEXAMPLES;
                 case "IGNORE" -> ModerationDecision.Action.IGNORE;
                 case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
-                case "TELEPORTPLAYER" -> ModerationDecision.Action.TELEPORT;
-                case "TELEPORTPOSITION" -> ModerationDecision.Action.TPTOPOSITION;
+                case "TELEPORT" -> ModerationDecision.Action.TELEPORT;
+                case "TPTOPOSITION" -> ModerationDecision.Action.TPTOPOSITION;
                 case "SPAWNAVATAR" -> ModerationDecision.Action.SPAWNAVATAR;
                 case "DESPAWNAVATAR" -> ModerationDecision.Action.DESPAWNAVATAR;
                 case "FOLLOWPLAYER" -> ModerationDecision.Action.FOLLOWPLAYER;

@@ -121,7 +121,7 @@ public class ModAvatar {
         entity.playSound(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 2.0f, 0.7f);
         // Chat Output: Moderator has an Avatar
         Text formatted = ModDecisions.formatChatOutput("", ConfigLoader.lang.feedback_67, Formatting.BLUE, Formatting.YELLOW, false, true, false);
-        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)),false);
+        if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(formatted,false);
         return ConfigLoader.lang.feedback_03.formatted(currentAvatarWorld, currentAvatarType, currentAvatarPosX, currentAvatarPosZ);
     }
 
@@ -154,7 +154,7 @@ public class ModAvatar {
         }
         // Chat Output: Moderator despawned Avatar
         Text formatted = ModDecisions.formatChatOutput("", ConfigLoader.lang.feedback_68, Formatting.BLUE, Formatting.YELLOW, false, true, false);
-        if (found && ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(Text.literal(String.valueOf(formatted)),false);
+        if (found && ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(formatted,false);
         if (!found) return ConfigLoader.lang.feedback_06; else return ConfigLoader.lang.feedback_05;
     }
 

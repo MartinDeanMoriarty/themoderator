@@ -175,7 +175,7 @@ public class ModDecisions {
                 String playerName = decision.value();
                 if (playerName != null) {
                     if (PlayerManager.isKnown(playerName)) {
-                        feedback = ConfigLoader.lang.feedback_64.formatted(playerName, PlayerManager.getProfile(playerName).toString());
+                        feedback = ConfigLoader.lang.feedback_64.formatted(playerName, PlayerManager.getProfile(playerName));
                     }
                     else {
                         // First contact
@@ -195,12 +195,12 @@ public class ModDecisions {
                 if (playerName != null) {
                     if (PlayerManager.isKnown(playerName)) {
                         PlayerManager.addTag(playerName, decision.value2());
-                        feedback = ConfigLoader.lang.feedback_65.formatted(decision.value2(), playerName);
+                        feedback = ConfigLoader.lang.feedback_65.formatted(playerName, decision.value2());
                     }
                     else {
                         // First contact
                         PlayerManager.addPlayer(playerName);
-                        feedback = ConfigLoader.lang.feedback_65.formatted(decision.value2(), playerName);
+                        feedback = ConfigLoader.lang.feedback_63.formatted(decision.value2(), playerName);
                         PlayerManager.addTag(playerName, decision.value2());
                     }
                 }
@@ -397,7 +397,7 @@ public class ModDecisions {
                     case WHISPER -> {
                         // Build Text
                         Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.WHITE, false, false, false);
-                        player.sendMessage(Text.literal(String.valueOf(message)),false);
+                        player.sendMessage(message,false);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value2(), decision.value());
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
@@ -416,7 +416,7 @@ public class ModDecisions {
                     case KICK -> {
                         // Build Text
                         Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.RED, true, false, true);
-                        player.networkHandler.disconnect(Text.literal(String.valueOf(message)));
+                        player.networkHandler.disconnect(message);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_09.formatted(decision.value(), decision.value2());
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
@@ -515,7 +515,7 @@ public class ModDecisions {
                         }
                         // Build Text
                         Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.DARK_RED, true, false, true);
-                        player.networkHandler.disconnect(Text.literal(String.valueOf(message)));
+                        player.networkHandler.disconnect(message);
 
                         if (ConfigLoader.config.useWhitelist) {
                             // Remove Player of the whitelist
