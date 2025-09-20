@@ -19,7 +19,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
-import java.awt.*;
+
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -32,6 +32,7 @@ public class ModAvatar {
     public static Integer currentAvatarPosZ = null;
     public static ChunkPos lastChunkPos = null;
     public static World currentAvatarWorld = null;
+    public static String currentAvatarDimension = null;
 
     // Search for a "lost" Avatar (used at server startup).
     public static boolean searchModeratorAvatar(ServerWorld world) {
@@ -44,6 +45,8 @@ public class ModAvatar {
                 currentAvatarPosX = entity.getBlockX();
                 currentAvatarPosZ = entity.getBlockZ();
                 currentAvatarWorld = entity.getWorld();
+                Identifier dimensionId = world.getRegistryKey().getValue();
+                currentAvatarDimension = dimensionId.getPath();
                 // Set Invulnerable
                 entity.setInvulnerable(true);
                 // Clear goals
@@ -61,10 +64,7 @@ public class ModAvatar {
     public static String currentModeratorAvatar() {
         String feedback;
         if (currentAvatarId != null) {
-
-            Identifier dimensionId = currentAvatarWorld.getRegistryKey().getValue();
-            String dimensionType = dimensionId.getPath();
-            feedback = ConfigLoader.lang.feedback_16.formatted(currentAvatarType, dimensionType, currentAvatarPosX, currentAvatarPosZ);
+            feedback = ConfigLoader.lang.feedback_16.formatted(currentAvatarType, currentAvatarDimension, currentAvatarPosX, currentAvatarPosZ);
         } else {
             feedback = ConfigLoader.lang.feedback_15;
         }
@@ -103,6 +103,8 @@ public class ModAvatar {
         currentAvatarId = entity.getUuid();
         currentAvatarType = entity.getType().toString();
         currentAvatarWorld = entity.getWorld();
+        Identifier dimensionId = world.getRegistryKey().getValue();
+        currentAvatarDimension = dimensionId.getPath();
         // Set Invulnerable
         entity.setInvulnerable(true);
         // Set to ground
@@ -122,7 +124,7 @@ public class ModAvatar {
         // Chat Output: Moderator has an Avatar
         Text formatted = ModDecisions.formatChatOutput("", ConfigLoader.lang.feedback_67, Formatting.BLUE, Formatting.YELLOW, false, true, false);
         if (ModEvents.SERVER != null) ModEvents.SERVER.getPlayerManager().broadcast(formatted,false);
-        return ConfigLoader.lang.feedback_03.formatted(currentAvatarWorld, currentAvatarType, currentAvatarPosX, currentAvatarPosZ);
+        return ConfigLoader.lang.feedback_03.formatted(currentAvatarType, currentAvatarWorld, currentAvatarPosX, currentAvatarPosZ);
     }
 
     // This will remove a registered Avatar and a lingering mob with the name "ConfigLoader.config.moderatorName" as well

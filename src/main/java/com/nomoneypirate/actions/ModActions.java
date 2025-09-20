@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.nomoneypirate.entity.ModAvatar.currentAvatarType;
 import static com.nomoneypirate.entity.ModAvatar.findModeratorWorld;
 
 public class ModActions {
@@ -51,7 +52,7 @@ public class ModActions {
             BlockPos pos = entity.getBlockPos();
             Identifier dimensionId = world.getRegistryKey().getValue();
             String dimensionType = dimensionId.getPath();
-            return String.format(ConfigLoader.lang.feedback_14, dimensionType, pos.getX(), pos.getY(), pos.getZ());
+            return String.format(ConfigLoader.lang.feedback_14, currentAvatarType, dimensionType, pos.getX(), pos.getY(), pos.getZ());
         }
         return String.format(ConfigLoader.lang.feedback_07.formatted(name));
     }

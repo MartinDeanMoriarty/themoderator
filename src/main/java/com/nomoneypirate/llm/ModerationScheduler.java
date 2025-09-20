@@ -42,7 +42,7 @@ public class ModerationScheduler {
                 int nowMinutes = LocalDateTime.now().getMinute();
                 if (nextHour == ConfigLoader.config.autoRestartHour) {
                     if (nowMinutes >= 45) {
-                        feedback = ConfigLoader.lang.restartFeedback.formatted();
+                        feedback = ConfigLoader.lang.restartFeedback.formatted(ConfigLoader.config.autoRestartHour, ConfigLoader.config.serverRestartPrewarn);
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec ->  ModDecisions.applyDecision(server, dec));
                     }
                 }

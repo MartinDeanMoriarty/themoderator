@@ -396,7 +396,7 @@ public class ModDecisions {
                 switch (decision.action()) {
                     case WHISPER -> {
                         // Build Text
-                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.WHITE, false, false, false);
+                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.WHITE, false, true, false);
                         player.sendMessage(message,false);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_45.formatted(decision.value2(), decision.value());
