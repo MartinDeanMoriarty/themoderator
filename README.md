@@ -25,7 +25,7 @@ llm moderator fabric mod for Minecraft
 ><br><a href="https://fabricmc.net/">Fabric version = 0.119.4+1.21.4</a>
 ><br>Loader version = 0.17.2
 ><br><a href="https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/6863303">fabric-api-0.119.4+1.21.4</a>
-><br><a href="https://ollama.com/">Ollama</a> or <a href="https://openai.com/">OpenAi API-Key</a>
+><br><a href="https://ollama.com/">Ollama</a> or <a href="https://openai.com/">OpenAi API-Key</a> or <a href="https://gemini.google.com">Google Gemini API-Key</a>
 
 ## Features
 The system is based on llm-self-prompting, trigger words and scheduling tasks.
@@ -64,15 +64,15 @@ However, you can download a compiled and !MOSTLY UNTESTED! version here:
 2. Clone the repository and open the main directory as project.
 3. Have a look at: 
    <br>src/main/java/com.nomoneypirate/config/ModConfig.java
-   <br>This is for run/config/themoderator/config.json
+   <br>This is for config/themoderator/config.json
    <br>And:
    <br>src/main/java/com.nomoneypirate/config/LangConfig.java
-   <br>This is for run/config/themoderator/themoderator_(lang).json
+   <br>This is for config/themoderator/themoderator_(lang).json
    <br><br>Be careful with translations!<br><br>  
 4. You can run or build the project in ide.
 
 ## Contributing
-At the Moment its just core elements, and I'm working on a working feedback and prompt architecture.
+At the Moment its just core elements.
 But if you wish to help, contributions are welcome! Please feel free to open an issue.
 
 ## License
