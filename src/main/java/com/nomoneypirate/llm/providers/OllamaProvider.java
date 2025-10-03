@@ -1,10 +1,13 @@
-package com.nomoneypirate.llm;
+package com.nomoneypirate.llm.providers;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nomoneypirate.config.ConfigLoader;
+import com.nomoneypirate.events.ModEvents;
+import com.nomoneypirate.llm.*;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,6 +37,9 @@ public class OllamaProvider implements LlmProvider {
     public CompletableFuture<ModerationDecision> moderateAsync(LlmClient.ModerationType type, String arg) {
         // Add to context manager (cache)
         if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
+        // Set Action Mode
+        if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.SUMMARY) ModEvents.actionMode = false;
+        if (type == LlmClient.ModerationType.MODERATION) ModEvents.actionMode = true;
         // Build the prompt with context manager (cache)
         String prompt = contextManager.buildPrompt("recall");
         String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
@@ -59,10 +65,10 @@ public class OllamaProvider implements LlmProvider {
             }
             JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
             String responseText = json.get("response").getAsString().trim();
-            // Separates action output for extra logging
-            // PromptLogger.logPrompt(type, "Action: " + responseText, ConfigLoader.config.ollamaModel);
-            // Add action to context manager (cache)
-            contextManager.addMessage("recall", ConfigLoader.lang.contextFeedback_02.formatted(responseText));
+            // Separates output for extra logging
+            PromptLogger.logPrompt(type, "Last used action/output: " + responseText, ConfigLoader.config.ollamaModel);
+            // Add to context manager (cache)
+            if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.responseContext.formatted(responseText));
             // return response
             return LlmClient.parseDecision(responseText);
         });

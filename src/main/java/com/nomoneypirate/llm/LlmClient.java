@@ -1,12 +1,19 @@
 package com.nomoneypirate.llm;
 
-import static com.nomoneypirate.Themoderator.LOGGER;
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.google.gson.*;
+import com.nomoneypirate.events.ModEvents;
+import com.nomoneypirate.llm.providers.GeminiProvider;
+import com.nomoneypirate.llm.providers.OllamaProvider;
+import com.nomoneypirate.llm.providers.OpenAiProvider;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import static com.nomoneypirate.Themoderator.LOGGER;
 
 public final class LlmClient {
 
@@ -17,11 +24,9 @@ public final class LlmClient {
     static {
         if (ConfigLoader.config.useOpenAi) {
             PROVIDER = new OpenAiProvider();
-        }
-        else if (ConfigLoader.config.useGemini) {
+        } else if (ConfigLoader.config.useGemini) {
             PROVIDER = new GeminiProvider();
-        }
-        else {
+        } else {
             PROVIDER = new OllamaProvider();
         }
     }
@@ -46,6 +51,7 @@ public final class LlmClient {
             this.logFilenamePrefix = logFilenamePrefix;
             this.loggingEnabled = loggingEnabled;
         }
+
         public String buildPrompt(String rules, String arg) {
             return builder.build(rules, arg);
         }
@@ -57,86 +63,96 @@ public final class LlmClient {
     }
 
     // Parse response
-    static ModerationDecision parseDecision(String responseText) {
-        String value = "";
-        String value2 = "";
-        String value3 = "";
-        try {
-            // Pre parse -> See extractJson()
-            JsonObject o = JsonParser.parseString(extractJson(responseText)).getAsJsonObject();
-            String actionStr = o.get("action").getAsString().toUpperCase();
+    public static ModerationDecision parseDecision(String responseText) {
+        // Get Text
+        String parsedResponse = extractString(responseText);
 
-            // Does value exist?
-            if (o.has("value") && !o.get("value").isJsonNull()) {
-                value = o.get("value").getAsString();
-            }
-            // Does value2 exist?
-            if (o.has("value2") && !o.get("value2").isJsonNull()) {
-                value2 = o.get("value2").getAsString();
-            }
-            // Does value3 exist?
-            if (o.has("value3") && !o.get("value3").isJsonNull()) {
-                value3 = o.get("value3").getAsString();
-            }
+        // Get Json
+        String jsonString = extractJson(responseText);
 
-            ModerationDecision.Action action = switch (actionStr) {
-                case "CHAT" -> ModerationDecision.Action.CHAT;
-                case "WHISPER" -> ModerationDecision.Action.WHISPER;
-                case "WARN" -> ModerationDecision.Action.WARN;
-                case "KICK" -> ModerationDecision.Action.KICK;
-                case "BAN" -> ModerationDecision.Action.BAN;
-                case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
-                case "WHOIS" -> ModerationDecision.Action.WHOIS;
-                case "PLAYERMEM" -> ModerationDecision.Action.PLAYERMEM;
-                case "FEEDBACK" -> ModerationDecision.Action.FEEDBACK;
-                case "SERVERRULES" -> ModerationDecision.Action.SERVERRULES;
-                case "ACTIONEXAMPLES" -> ModerationDecision.Action.ACTIONEXAMPLES;
-                case "IGNORE" -> ModerationDecision.Action.IGNORE;
-                case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
-                case "TELEPORT" -> ModerationDecision.Action.TELEPORT;
-                case "TPTOPOSITION" -> ModerationDecision.Action.TPTOPOSITION;
-                case "SPAWNAVATAR" -> ModerationDecision.Action.SPAWNAVATAR;
-                case "DESPAWNAVATAR" -> ModerationDecision.Action.DESPAWNAVATAR;
-                case "FOLLOWPLAYER" -> ModerationDecision.Action.FOLLOWPLAYER;
-                case "LOOKATPLAYER" -> ModerationDecision.Action.LOOKATPLAYER;
-                case "GOTOPLAYER" -> ModerationDecision.Action.GOTOPLAYER;
-                case "GOTOPOSITION" -> ModerationDecision.Action.GOTOPOSITION;
-                case "MOVEAROUND" -> ModerationDecision.Action.MOVEAROUND;
-                case "DAMAGEPLAYER" -> ModerationDecision.Action.DAMAGEPLAYER;
-                case "CLEARINVENTORY" -> ModerationDecision.Action.CLEARINVENTORY;
-                case "KILLPLAYER" -> ModerationDecision.Action.KILLPLAYER;
-                case "GIVEPLAYER" -> ModerationDecision.Action.GIVEPLAYER;
-                case "CHANGEWEATHER" -> ModerationDecision.Action.CHANGEWEATHER;
-                case "CHANGETIME" -> ModerationDecision.Action.CHANGETIME;
-                case "SLEEP" -> ModerationDecision.Action.SLEEP;
-                case "LISTLOCATIONS" -> ModerationDecision.Action.LISTLOCATIONS;
-                case "GETLOCATION" -> ModerationDecision.Action.GETLOCATION;
-                case "SETLOCATION" -> ModerationDecision.Action.SETLOCATION;
-                case "REMLOCATION" -> ModerationDecision.Action.REMLOCATION;
-                case "STOPACTION" -> ModerationDecision.Action.STOPACTION;
-                case "STOPCHAIN" -> ModerationDecision.Action.STOPCHAIN;
-                default -> ModerationDecision.Action.IGNORE;
-            };
-            // Return moderation decision
-            return new ModerationDecision(action, value, value2, value3);
-        } catch (Exception e) {
-            // If the LLM does not strictly deliver JSON
-            if (ConfigLoader.config.modLogging) LOGGER.info("Unclear output from llm model.");
-            // Return moderation decision
-            String feedback = ConfigLoader.lang.feedback_12;
-            return new ModerationDecision(ModerationDecision.Action.FEEDBACK, feedback,"", "");
+        boolean hasText = parsedResponse != null && !parsedResponse.isBlank();
+        boolean hasJson = jsonString != null && !jsonString.equals("{}");
+
+        // Send message if text was found
+        if (hasText) {
+            Text message = ModDecisions.formatChatOutput(
+                    ConfigLoader.config.moderatorName + ": ",
+                    parsedResponse,
+                    Formatting.BLUE,
+                    Formatting.WHITE,
+                    false, false, false
+            );
+            ModEvents.SERVER.getPlayerManager().broadcast(message, false);
         }
+
+        // Do action if json was found
+        if (hasJson) {
+            try {
+                JsonObject o = JsonParser.parseString(jsonString).getAsJsonObject();
+                String actionStr = o.get("action").getAsString().toUpperCase();
+
+                String value = o.has("value") && !o.get("value").isJsonNull() ? o.get("value").getAsString() : "";
+                String value2 = o.has("value2") && !o.get("value2").isJsonNull() ? o.get("value2").getAsString() : "";
+                String value3 = o.has("value3") && !o.get("value3").isJsonNull() ? o.get("value3").getAsString() : "";
+
+                ModerationDecision.Action action = switch (actionStr) {
+                    case "WARN" -> ModerationDecision.Action.WARN;
+                    case "KICK" -> ModerationDecision.Action.KICK;
+                    case "BAN" -> ModerationDecision.Action.BAN;
+                    case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
+                    case "WHOIS" -> ModerationDecision.Action.WHOIS;
+                    case "PLAYERMEM" -> ModerationDecision.Action.PLAYERMEM;
+                    case "SERVERRULES" -> ModerationDecision.Action.SERVERRULES;
+                    case "SERVERINFO" -> ModerationDecision.Action.SERVERINFO;
+                    case "PLAYERLIST" -> ModerationDecision.Action.PLAYERLIST;
+                    case "TELEPORT" -> ModerationDecision.Action.TELEPORT;
+                    case "DAMAGEPLAYER" -> ModerationDecision.Action.DAMAGEPLAYER;
+                    case "CLEARINVENTORY" -> ModerationDecision.Action.CLEARINVENTORY;
+                    case "KILLPLAYER" -> ModerationDecision.Action.KILLPLAYER;
+                    case "GIVEPLAYER" -> ModerationDecision.Action.GIVEPLAYER;
+                    case "CHANGEWEATHER" -> ModerationDecision.Action.CHANGEWEATHER;
+                    case "CHANGETIME" -> ModerationDecision.Action.CHANGETIME;
+                    case "LISTLOCATIONS" -> ModerationDecision.Action.LISTLOCATIONS;
+                    case "GETLOCATION" -> ModerationDecision.Action.GETLOCATION;
+                    case "SETLOCATION" -> ModerationDecision.Action.SETLOCATION;
+                    case "REMLOCATION" -> ModerationDecision.Action.REMLOCATION;
+                    case "SELFFEEDBACK" -> ModerationDecision.Action.SELFFEEDBACK;
+                    default -> ModerationDecision.Action.IGNORE;
+                };
+                return new ModerationDecision(action, value, value2, value3);
+            } catch (Exception e) {
+                if (ConfigLoader.config.modLogging) LOGGER.info("Unclear LLM Output: {}", e.getMessage());
+                // Let the LLM know there was a mistake
+                String feedback = ConfigLoader.lang.feedback_02;
+                return new ModerationDecision(ModerationDecision.Action.SELFFEEDBACK, feedback, "", "");
+            }
+        }
+
+        // Nothing to do, fall back to IGNORE
+        return new ModerationDecision(ModerationDecision.Action.IGNORE, "", "", "");
     }
-    // Pre parse
+
+
     private static String extractJson(String rawText) {
         Pattern pattern = Pattern.compile("\\{.*?}", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(rawText);
+        // Just get the fist match
         if (matcher.find()) {
             return matcher.group();
         }
         return "{}";
     }
 
-    private LlmClient() {}
+    private static String extractString(String rawText) {
+        // Just remove all Json and return it
+        String removed = rawText.replaceAll("\\{.*?}", "").trim();
+        if (!removed.isEmpty()) {
+            return rawText.replaceAll("\\{.*?}", "").trim();
+        }
+        return null;
+    }
+
+    private LlmClient() {
+    }
 
 }

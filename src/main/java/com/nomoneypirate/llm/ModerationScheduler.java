@@ -29,11 +29,9 @@ public class ModerationScheduler {
                 // Snapshot to summary
                 feedback = String.join("\n", snapshot);
                 // If summary is empty, don't let the task go to waste, use it to do something.
-                // So, let the llm tell players about the activation keywords or what ever
-                String keyWords = ConfigLoader.config.activationKeywords.toString();
-                if (feedback.isEmpty()) feedback = ConfigLoader.lang.feedback_38.formatted(keyWords);
+                if (feedback.isEmpty()) feedback = ConfigLoader.lang.feedback_38;
                 // Send summary to llm
-                LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.contextFeedback_05.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
+                LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.summaryContext.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
             }
 
             case "restart" -> {
@@ -43,7 +41,7 @@ public class ModerationScheduler {
                 if (nextHour == ConfigLoader.config.autoRestartHour) {
                     if (nowMinutes >= 45) {
                         feedback = ConfigLoader.lang.restartFeedback.formatted(ConfigLoader.config.autoRestartHour, ConfigLoader.config.serverRestartPrewarn);
-                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.contextFeedback_03.formatted(feedback)).thenAccept(dec ->  ModDecisions.applyDecision(server, dec));
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback)).thenAccept(dec ->  ModDecisions.applyDecision(server, dec));
                     }
                 }
             }

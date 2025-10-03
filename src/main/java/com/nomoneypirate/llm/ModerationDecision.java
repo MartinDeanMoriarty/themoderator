@@ -2,40 +2,27 @@ package com.nomoneypirate.llm;
 
 public record ModerationDecision(Action action, String value, String value2, String value3) {
     public enum Action {
-        CHAT,
-        WHISPER,
         WARN,
         KICK,
         BAN,
         IGNORE,
         WHEREIS,
         WHOIS,
+        SELFFEEDBACK,
         PLAYERMEM,
-        FEEDBACK,
         SERVERRULES,
-        ACTIONEXAMPLES,
+        SERVERINFO,
         PLAYERLIST,
         TELEPORT,
-        TPTOPOSITION,
-        SPAWNAVATAR,
-        DESPAWNAVATAR,
-        FOLLOWPLAYER,
-        LOOKATPLAYER,
-        GOTOPLAYER,
-        GOTOPOSITION,
-        MOVEAROUND,
         DAMAGEPLAYER,
         CLEARINVENTORY,
         KILLPLAYER,
         GIVEPLAYER,
         CHANGEWEATHER,
         CHANGETIME,
-        SLEEP,
         LISTLOCATIONS,
         GETLOCATION,
         SETLOCATION,
-        REMLOCATION,
-        STOPACTION,
-        STOPCHAIN
+        REMLOCATION
     }
 }

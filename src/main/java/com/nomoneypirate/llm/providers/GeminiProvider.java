@@ -1,4 +1,4 @@
-package com.nomoneypirate.llm;
+package com.nomoneypirate.llm.providers;
 
 import com.nomoneypirate.config.ConfigLoader;
 import java.net.http.*;
@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.gson.*;
+import com.nomoneypirate.llm.*;
 
 public class GeminiProvider implements LlmProvider {
     private static final String GEMINI_URI = ConfigLoader.config.geminiApiUri;
@@ -56,7 +57,7 @@ public class GeminiProvider implements LlmProvider {
                             .get("text").getAsString().trim();
 
                     // Add action to context manager (cache)
-                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.contextFeedback_02.formatted(content));
+                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.responseContext.formatted(content));
                     // return response
                     return LlmClient.parseDecision(content);
                 });

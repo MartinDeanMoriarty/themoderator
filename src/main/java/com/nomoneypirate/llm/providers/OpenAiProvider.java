@@ -1,10 +1,11 @@
-package com.nomoneypirate.llm;
+package com.nomoneypirate.llm.providers;
 
 import com.nomoneypirate.config.ConfigLoader;
 import java.net.http.*;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import com.google.gson.*;
+import com.nomoneypirate.llm.*;
 
 public class OpenAiProvider implements LlmProvider {
 
@@ -53,7 +54,7 @@ public class OpenAiProvider implements LlmProvider {
                             .getAsJsonObject("message")
                             .get("content").getAsString().trim();
                     // Add action to context manager (cache)
-                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.contextFeedback_02.formatted(content));
+                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.responseContext.formatted(content));
                     // return response
                     return LlmClient.parseDecision(content);
                 });

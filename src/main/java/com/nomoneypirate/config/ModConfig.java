@@ -35,20 +35,24 @@ public class ModConfig {
     ////  The name of the moderator
     public String moderatorName = "The Moderator";
     //// Activation keywords
+    // Can be names of the moderator or used as a blacklist
+    public Boolean useActivationKeywords = false;
     public Set<String> activationKeywords = Set.of("moderator", "mod", "admin");
+    // Blacklist examples ("arsch", "hurensohn", "schwuchtel")
     // Request cooldown in seconds
-    public Integer requestCooldown = 4;
+    public Integer requestCooldown = 1;
     // Is moderator allowed to use BAN?
-    public Boolean allowBanCommand = true;
+    public Boolean allowBanCommand = false;
     // Server with a whitelist should use this!
     public Boolean useWhitelist = true;
     // Server without a whitelist should use this!
     // But it is possible to use both.
     public Boolean useBanlist = false;
-    //// === Moderation schedule ===
-    public Boolean scheduledModeration = false;
-    // Moderation schedule interval in minutes
-    public Integer scheduleModerationInterval = 120;
+    //// === Moderation schedules ===
+    // Scheduled summaries
+    public Boolean scheduledSummary = false;
+    // Summary interval in minutes
+    public Integer scheduleSummaryInterval = 30;
     // Scheduled server provider restart announcement
     public Boolean scheduledServerRestart = false;
     // Automatic server provider restart at hour 0-23
