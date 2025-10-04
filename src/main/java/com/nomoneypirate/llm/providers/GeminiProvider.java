@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.gson.*;
+import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.llm.*;
 
 public class GeminiProvider implements LlmProvider {
@@ -21,6 +22,9 @@ public class GeminiProvider implements LlmProvider {
     public CompletableFuture<ModerationDecision> moderateAsync(LlmClient.ModerationType type, String arg) {
         // Add to context manager (cache)
         if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", arg);
+        // Set Action Mode
+        if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.SUMMARY) ModEvents.actionMode = false;
+        if (type == LlmClient.ModerationType.MODERATION) ModEvents.actionMode = true;
         // Build the prompt with context manager (cache)
         String prompt = contextManager.buildPrompt("recall");
         String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
