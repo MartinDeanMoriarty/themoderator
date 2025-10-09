@@ -1,6 +1,6 @@
 # themoderator
 
-The only moderator you can trust ;)
+>The only moderator you can trust ;)
 <br><br>
 llm moderator fabric mod for Minecraft
  ---
