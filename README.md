@@ -5,6 +5,7 @@ The only moderator you can trust ;)
 llm moderator fabric mod for Minecraft
  ---
 ## Table of Contents
+
 - [Warning](#warning)
 - [Dependencies](#dependencies)
 - [Features](#features)
@@ -16,6 +17,7 @@ llm moderator fabric mod for Minecraft
 ---
 
 ## Warning
+
 > [!WARNING]
 > <br>It should NOT run on public servers!
 > <br><br>It is in development and mostly NOT tested and possibly also unstable!
@@ -29,6 +31,7 @@ llm moderator fabric mod for Minecraft
 
 ---
 ## Features
+
 Chat with you favorite llm inside Minecraft.
 <br>The moderator can welcome new players, periodically check summaries or announce automatic server restarts.
 <br>-see: (src/main/java/com.nomoneypirate/config/ModConfig.java)
@@ -40,6 +43,7 @@ Chat with you favorite llm inside Minecraft.
 <br><br>
 ---
 ## Download
+
 You can download a compiled and !MOSTLY UNTESTED! version here:
 <br><a href="https://drive.google.com/file/d/13R8WikinquK_M0yg64NlT4yN8_BodHKW/view">Latest Build</a>
 <br>This version may not be up to date!
@@ -47,6 +51,7 @@ You can download a compiled and !MOSTLY UNTESTED! version here:
 <br><br>
 ---
 ## Dev-Installation
+
 1. Set up development environment:
    <br>https://wiki.fabricmc.net/tutorial:setup
 2. Clone the repository and open the main directory as project.
@@ -59,11 +64,13 @@ You can download a compiled and !MOSTLY UNTESTED! version here:
 <br><br>
 ---
 ## Contributing
+
 At the Moment its just core elements.
 <br>But if you wish to help, contributions are welcome!
 <br><br>
 ---
 ## License
+
 Creative Commons
 <br><br>
 ---
