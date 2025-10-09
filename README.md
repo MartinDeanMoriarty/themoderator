@@ -17,8 +17,10 @@ llm moderator fabric mod for Minecraft
 
 ## Warning
 > [!WARNING]
-> <br>In theory the llm can not do any real harm since it is not able to use server commands or write code.
-> <br>But our future oppressors may prove me wrong, so please be careful.
+> <br>It should NOT run on public servers!
+> <br><br>It is in development and mostly NOT tested and possibly also unstable!
+> <br><br>In theory the llm can not do any real harm since it is not able to use server commands or write code.
+> <br><br>But our future leaders may prove me wrong, so please be careful.
 ---
 ## Dependencies
 ><a href="https://www.minecraft.net/">Minecraft version = 1.21.8</a>
@@ -38,9 +40,7 @@ Chat with you favorite llm inside Minecraft.
 <br><br>
 ---
 ## Download
-It should NOT run on public servers!
-<br>It is in development and mostly NOT tested and possibly also unstable!
-<br>However, you can download a compiled and !MOSTLY UNTESTED! version here:
+You can download a compiled and !MOSTLY UNTESTED! version here:
 <br><a href="https://drive.google.com/file/d/13R8WikinquK_M0yg64NlT4yN8_BodHKW/view">Latest Build</a>
 <br>This version may not be up to date!
 <br><br>If you are really into development or just testing every Git repo there is, well, just follow Dev-Installation.
