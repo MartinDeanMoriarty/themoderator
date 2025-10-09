@@ -23,11 +23,12 @@ public class ModEvents {
     // Scheduler intervals
     private static int moderationTickCounter = 0;
     private static final int TICKS_PER_MINUTE = 20 * 60;
-    private static boolean restartAnnounced = false;
+    public static boolean restartAnnounced = false;
     // Cooldown for chat messages
     private static final Map<String, Long> cooldowns = new ConcurrentHashMap<>();
     public static MinecraftServer SERVER;
     public static Boolean actionMode = false;
+    private static boolean startAnnounced = false;
 
     public static void registerEvents() {
         // Scheduler intervals
@@ -64,7 +65,8 @@ public class ModEvents {
 
             // Let the llm know when the server (re)started
             // Only send if it is a dedicated server because on singleplayer it collides with the player join message
-            if (server instanceof DedicatedServer) {
+            if (!startAnnounced && server instanceof DedicatedServer) {
+                startAnnounced = true;
                 // Server (re)start message.
                 LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(ConfigLoader.lang.feedback_17
                 )).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
@@ -115,7 +117,7 @@ public class ModEvents {
             }
 
             // Keyword-Check
-            if (!ConfigLoader.config.useActivationKeywords || ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains)) {
+            if (!ConfigLoader.config.useActivationKeywords || (ConfigLoader.config.useActivationKeywords && ConfigLoader.config.activationKeywords.stream().anyMatch(content.toLowerCase()::contains))) {
                 if (!actionMode) {
                     // Cooldown
                     long now = System.currentTimeMillis();
