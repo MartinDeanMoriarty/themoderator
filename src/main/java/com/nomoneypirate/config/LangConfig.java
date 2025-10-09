@@ -11,6 +11,7 @@ public class LangConfig {
     public String feedback_09 = "Du hast Spieler %s erfolgreich gekickt mit Grund: %s .";
     public String feedback_10 = "Der BAN Befehl ist nicht verfügbar.";
     public String feedback_11 = "Du hast den Spieler %s erfolgreich mit Grund: %s ,gebannt.";
+    public String feedback_12 = "Du hast den Spieler %s erfolgreich von der Bannliste genommen.";
     public String feedback_13 = "Der Spieler %s ist in Dimension %s bei X: %d, Y: %d, Z: %d .";
     public String feedback_17 = "Der Server wurde (neu)gestartet und ist bereit für Spieler.";
     public String feedback_35 = "Zapp! Du hast den Spieler %s zu Position X: %d , Z: %d teleportiert.";
@@ -113,8 +114,8 @@ public class LangConfig {
             {"action": "SERVERRULES"} = Schau in die Serverregeln, wenn du dir nicht sicher bist, ob ein Verstoß vorliegt.
             {"action": "SERVERINFO"} = Zeigt Informationen zur Konfiguration des Servers.
             {"action": "PLAYERLIST"} = Listet alle Spieler, die online sind.
-            {"action": "WHEREIS", "value":"(SpielerName)"} = Sagt dir, wo ein Spieler ist.
-            {"action": "TELEPORT", "value":"(SpielerName)", "value2":"X Z"} = Teleportiert dinen Spieler zu Koordinaten.
+            {"action": "WHEREIS", "value":"SpielerName"} = Sagt dir, wo ein Spieler ist.
+            {"action": "TELEPORT", "value":"SpielerName", "value2":"X Z"} = Teleportiert dinen Spieler zu Koordinaten.
             {"action": "CHANGEWEATHER", "value":"(CLEAR|RAIN|THUNDER)"} = Ändere das Wetter. Sehr hilfreich für bestimmte Spielmechaniken.
             {"action": "CHANGETIME", "value":"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)"} = Ändere die Zeit.
             {"action": "SLEEP"} = Schlafe durch die Nacht, falls ein Spieler dich darum bittet.
@@ -127,12 +128,14 @@ public class LangConfig {
             {"action": "WARN", "value":"SpielerName", "value2":"TEXT"} = Damit kannst du einen Spieler verwarnen.
             {"action": "KICK", "value":"SpielerName", "value2":"TEXT"} = Damit kickst du einen Spieler.
             {"action": "BAN", "value":"SpielerName", "value2":"TEXT"} = Achtung! Damit bannst du einen Spieler.
-          
+            {"action": "PARDON", "value":"SpielerName"} = Nehme einen Spieler von der Bannliste.
+            
             Location Memory:
             {"action": "LISTLOCATIONS"} = Zeigt eine Liste der gespeicherten Locations.
             {"action": "GETLOCATION", "value":"Locationname"} = Zeigt, wo sich eine Location befindet.
             {"action": "SETLOCATION", "value":"Locationname", "value2":"(OVERWORLD|NETHER|END)", "value3":"X Z"} = Speichert eine neue Location in der Liste.
             {"action": "REMLOCATION", "value":"Locationname"} = Löscht eine Location aus der Liste.
+            {"action": "TPTOLOCATION", "value":"SpielerName", "value2":"Locationname"} = Teleportiere einen Spieler direkt zu einer Location.
             
             -- ACHTUNG! Wir befinden uns in der Testphase! Ändere nicht das bekannte Json Format wenn Fehler auftreten oder Feedback keinen Sinn ergibt!
             -- Mach dich nun locker! Diese Regeln sind streng und steril damit sie klar und unmissverständlich sind. Sie sollen dir helfen, dir aber nicht deine Persönlichkeit und deinen Spaß an Minecraft nehmen!

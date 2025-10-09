@@ -99,6 +99,7 @@ public final class LlmClient {
                     case "WARN" -> ModerationDecision.Action.WARN;
                     case "KICK" -> ModerationDecision.Action.KICK;
                     case "BAN" -> ModerationDecision.Action.BAN;
+                    case "PARDON" -> ModerationDecision.Action.PARDON;
                     case "WHEREIS" -> ModerationDecision.Action.WHEREIS;
                     case "WHOIS" -> ModerationDecision.Action.WHOIS;
                     case "PLAYERMEM" -> ModerationDecision.Action.PLAYERMEM;
@@ -116,6 +117,7 @@ public final class LlmClient {
                     case "GETLOCATION" -> ModerationDecision.Action.GETLOCATION;
                     case "SETLOCATION" -> ModerationDecision.Action.SETLOCATION;
                     case "REMLOCATION" -> ModerationDecision.Action.REMLOCATION;
+                    case "TPTOLOCATION" -> ModerationDecision.Action.TPTOLOCATION;
                     case "SELFFEEDBACK" -> ModerationDecision.Action.SELFFEEDBACK;
                     default -> ModerationDecision.Action.IGNORE;
                 };

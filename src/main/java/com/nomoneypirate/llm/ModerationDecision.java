@@ -5,6 +5,7 @@ public record ModerationDecision(Action action, String value, String value2, Str
         WARN,
         KICK,
         BAN,
+        PARDON,
         IGNORE,
         WHEREIS,
         WHOIS,
@@ -23,6 +24,7 @@ public record ModerationDecision(Action action, String value, String value2, Str
         LISTLOCATIONS,
         GETLOCATION,
         SETLOCATION,
-        REMLOCATION
+        REMLOCATION,
+        TPTOLOCATION
     }
 }

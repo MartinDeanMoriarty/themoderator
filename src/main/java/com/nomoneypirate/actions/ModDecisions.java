@@ -231,7 +231,7 @@ public class ModDecisions {
                 }
             }
 
-            case TELEPORT, WHEREIS, WARN, KICK, BAN, DAMAGEPLAYER, CLEARINVENTORY, KILLPLAYER, GIVEPLAYER -> {
+            case TELEPORT, TPTOLOCATION, WHEREIS, WARN, KICK, BAN, PARDON, DAMAGEPLAYER, CLEARINVENTORY, KILLPLAYER, GIVEPLAYER -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
                 if (player == null) {
                     String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
@@ -255,6 +255,29 @@ public class ModDecisions {
                                 feedback = ModActions.teleportPositionPlayer(world, playerName, posX, posZ);
                             } else {
                                 feedback = ConfigLoader.lang.feedback_61;
+                            }
+                            // Feedback
+                            LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                        }
+                    }
+
+                    case TPTOLOCATION -> {
+                        String locationName = decision.value();
+                        String feedback;
+                        if (world != null) {
+                            try {
+                                Location loc = LocationManager.getLocation(locationName);
+                                if (loc == null) {
+                                    feedback = ConfigLoader.lang.feedback_56.formatted(locationName); // No Location
+                                } else {
+                                    double posX = loc.x;
+                                    double posZ = loc.z;
+                                    feedback = ModActions.teleportPositionPlayer(world, playerName, posX, posZ);
+                                }
+                            } catch (Exception e) {
+                                if (ConfigLoader.config.modLogging)
+                                    LOGGER.error("Error in location '{}': {}", locationName, e.getMessage());
+                                feedback = ConfigLoader.lang.exceptionFeedback;
                             }
                             // Feedback
                             LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
@@ -365,6 +388,30 @@ public class ModDecisions {
                             }
                         }
                         String feedback = ConfigLoader.lang.feedback_11.formatted(playerName, decision.value2());
+                        LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
+                        if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
+                    }
+
+                    case PARDON -> {
+                        if (ConfigLoader.config.useWhitelist) {
+                            // Put Player on whitelist
+                            WhitelistEntry entry = server.getPlayerManager().getWhitelist().get(player.getGameProfile());
+                            if (entry == null) {
+                                WhitelistEntry new_entry = new WhitelistEntry(player.getGameProfile());
+                                server.getPlayerManager().getWhitelist().add(new_entry);
+                                server.getPlayerManager().reloadWhitelist();
+                            }
+                        }
+                        if (ConfigLoader.config.useBanlist) {
+                            BannedPlayerEntry entry = getBannedPlayerEntry(decision, player);
+                            server.getPlayerManager().getUserBanList().remove(entry);
+                            try {
+                                server.getPlayerManager().getUserBanList().save();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        String feedback = ConfigLoader.lang.feedback_12.formatted(playerName);
                         LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback)).thenAccept(dec -> applyDecision(server, dec));
                         if (ConfigLoader.config.modLogging) LOGGER.info(feedback);
                     }
