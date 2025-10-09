@@ -40,7 +40,6 @@ llm moderator fabric mod for Minecraft
 <br>This way the llm can interact safely with the server and the players.
 <br><b>Actions</b> the llm can do for now:
 <br>-see (src/main/java/com.nomoneypirate/llm/ModerationDecision.java)
-<br><br>
 ---
 ## Download
 
@@ -48,7 +47,6 @@ llm moderator fabric mod for Minecraft
 <br><a href="https://drive.google.com/file/d/13R8WikinquK_M0yg64NlT4yN8_BodHKW/view">Latest Build</a>
 <br>This version may not be up to date!
 <br><br>If you are really into development or just testing every Git repo there is, well, just follow Dev-Installation.
-<br><br>
 ---
 ## Dev-Installation
 
@@ -61,16 +59,13 @@ llm moderator fabric mod for Minecraft
    <br>src/main/java/com.nomoneypirate/config/LangConfig.java
    <br>Be careful with translations!<br>  
 >4. Build the project with gradle or run it in the ide.
-<br><br>
 ---
 ## Contributing
 
 >At the Moment its just core elements.
 <br>But if you wish to help, contributions are welcome!
-<br><br>
 ---
 ## License
 
 >Creative Commons
-<br><br>
 ---
