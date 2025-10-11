@@ -74,7 +74,7 @@ public final class LlmClient {
         boolean hasJson = jsonString != null && !jsonString.equals("{}");
 
         // Send message if text was found
-        if (hasText) {
+        if (hasText && parsedResponse.length() > 1) {
             Text message = ModDecisions.formatChatOutput(
                     ConfigLoader.config.moderatorName + ": ",
                     parsedResponse,
