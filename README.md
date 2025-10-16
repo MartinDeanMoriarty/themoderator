@@ -33,13 +33,22 @@ llm moderator fabric mod for Minecraft
 ## Features
 
 >Chat with you favorite llm inside Minecraft.
-<br>The moderator can welcome new players, periodically check summaries or announce automatic server restarts.
+<br><br>The moderator can welcome new players, periodically check summaries or announce automatic server restarts.
 <br>-see: (src/main/java/com.nomoneypirate/config/ModConfig.java)
-<br>The llm can use so called <b>actions</b> like this:
+<br><br>The llm can use so called <b>actions</b> like this:
 <br>```{"action": "KICK", "value": "Playername"}```
 <br>This way the llm can interact safely with the server and the players.
-<br><b>Actions</b> the llm can do for now:
+<br><br><b>Actions</b> the llm can do for now:
 <br>-see (src/main/java/com.nomoneypirate/llm/ModerationDecision.java)
+>
+> Custom Prompt Format:
+><br>Instead of using the conventional role/content JSON format (e.g. { "role": "user", "content": "..." }), 
+this mod introduces a custom prompt structure tailored for in-game moderation. 
+<br>Prompts are composed of three distinct parts:
+<br>request: the player's message or situation
+<br>response: the LLM's reply
+<br>feedback: optional system-level feedback for the LLM to reflect on
+<br><br>This format allows for more flexible prompt construction and enables the LLM to learn from server-side evaluations (e.g. moderation outcomes or player reactions). <br>It was designed to support richer interactions and internal reasoning beyond typical chat scenarios.
 ---
 ## Download
 
