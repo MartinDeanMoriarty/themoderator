@@ -32,7 +32,7 @@ llm moderator fabric mod for Minecraft
 ---
 ## Features
 
->Chat with you favorite llm inside Minecraft.
+>Chat with your favorite llm inside Minecraft.
 <br><br>The moderator can welcome new players, periodically check summaries or announce automatic server restarts.
 <br>-see: (src/main/java/com.nomoneypirate/config/ModConfig.java)
 <br><br>The llm can use so called <b>actions</b> like this:
