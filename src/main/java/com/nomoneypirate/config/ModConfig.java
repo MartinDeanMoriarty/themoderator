@@ -24,7 +24,7 @@ public class ModConfig {
     // Usually no change needed.
     public String geminiApiUri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     // Gemini api-key
-    public String geminiApiKey = "AIzaSyBs2fQPMkuL2A8Q_bPOHnB61aQ-qCVtS5E";
+    public String geminiApiKey = "";
     //// The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds
