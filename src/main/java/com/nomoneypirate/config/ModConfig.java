@@ -4,13 +4,13 @@ import java.util.Set;
 
 public class ModConfig {
     //// === Ollama ===
-    public Boolean useOllama = true;
+    public Boolean useOllama = false;
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
     public String ollamaModel = "mistral-nemo";
     // Model warm up
-    public Boolean ollamaWarmup = true;
+    public Boolean ollamaWarmup = false;
     //// === OpenAI ===
     public Boolean useOpenAi = false;
     // Usually no change needed.
@@ -20,11 +20,11 @@ public class ModConfig {
     //OpenAi model
     public String openAiModel = "gpt-4.1";
     //// === Google gemini ===
-    public Boolean useGemini = false;
+    public Boolean useGemini = true;
     // Usually no change needed.
-    public String geminiApiUri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    public String geminiApiUri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     // Gemini api-key
-    public String geminiApiKey = "?";
+    public String geminiApiKey = "AIzaSyBs2fQPMkuL2A8Q_bPOHnB61aQ-qCVtS5E";
     //// The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds

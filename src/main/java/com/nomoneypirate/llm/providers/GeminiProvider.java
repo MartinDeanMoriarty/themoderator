@@ -54,11 +54,20 @@ public class GeminiProvider implements LlmProvider {
                         throw new RuntimeException("Gemini HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String content = json.getAsJsonArray("candidates")
+                    JsonObject candidate = json.getAsJsonArray("candidates")
+                            .get(0).getAsJsonObject();
+
+                    JsonObject contentObj = candidate
+                            .getAsJsonObject("content");
+
+                    JsonArray partsArray = contentObj
+                            .getAsJsonArray("parts");
+
+                    String content = partsArray
                             .get(0).getAsJsonObject()
-                            .getAsJsonArray("content")
-                            .get(0).getAsJsonObject()
-                            .get("text").getAsString().trim();
+                            .get("text").getAsString()
+                            .trim();
+
 
                     // Add action to context manager (cache)
                     if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.responseContext.formatted(content));
