@@ -38,9 +38,9 @@ public class LocationManager {
                 locations.putAll(loaded);
             }
             // Log this!
-            if (ConfigLoader.config.modLogging) LOGGER.info("6of6 Location Manager Initialized.");
+            if (ConfigLoader.config.modLogging) LOGGER.info("Location Manager Initialized.");
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("6of6 Error loading Location Manager: {}", e.getMessage());
+            if (ConfigLoader.config.modLogging) LOGGER.error("Error loading Location Manager: {}", e.getMessage());
         }
     }
 

@@ -38,9 +38,9 @@ public class PlayerManager {
                 players.putAll(loaded);
             }
             // Log this!
-            if (ConfigLoader.config.modLogging) LOGGER.info("5of6 Player Manager Initialized.");
+            if (ConfigLoader.config.modLogging) LOGGER.info("Player Manager Initialized.");
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("5of6 Error loading Player Manager: {}", e.getMessage());
+            if (ConfigLoader.config.modLogging) LOGGER.error("Error loading Player Manager: {}", e.getMessage());
         }
     }
     public static void savePlayers() {

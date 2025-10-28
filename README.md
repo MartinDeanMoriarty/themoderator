@@ -36,7 +36,7 @@ llm moderator fabric mod for Minecraft
 <br><br>The moderator can welcome new players, periodically check summaries or announce automatic server restarts.
 <br>-see: (src/main/java/com.nomoneypirate/config/ModConfig.java)
 <br><br>The llm can use so called <b>actions</b> like this:
-<br>```{"action": "KICK", "value": "Playername"}```
+<br>```{"action": "KICK", "value": "Playername", "value2": "Reason"}```
 <br>This way the llm can interact safely with the server and the players.
 <br><br><b>Actions</b> the llm can do for now:
 <br>-see (src/main/java/com.nomoneypirate/llm/ModerationDecision.java)

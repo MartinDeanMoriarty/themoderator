@@ -4,7 +4,7 @@ import java.util.Set;
 
 public class ModConfig {
     //// === Ollama ===
-    public Boolean useOllama = false;
+    public Boolean useOllama = true;
     // Usually no change needed.
     public String ollamaURI = "http://localhost:11434/api/generate";
     // The name of the model used to generate
@@ -20,11 +20,11 @@ public class ModConfig {
     //OpenAi model
     public String openAiModel = "gpt-4.1";
     //// === Google gemini ===
-    public Boolean useGemini = true;
+    public Boolean useGemini = false;
     // Usually no change needed.
-    public String geminiApiUri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    public String geminiURI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     // Gemini api-key
-    public String geminiApiKey = "";
+    public String geminiApiKey = "?";
     //// The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds
@@ -44,7 +44,7 @@ public class ModConfig {
     // Is moderator allowed to use BAN?
     public Boolean allowBanCommand = false;
     // Server with a whitelist should use this!
-    public Boolean useWhitelist = true;
+    public Boolean useWhitelist = false;
     // Server without a whitelist should use this!
     // But it is possible to use both.
     public Boolean useBanlist = false;
@@ -68,4 +68,5 @@ public class ModConfig {
     // LLM Logging
     public Boolean llmLogging = true;
     public String llmLogFilename = "themoderator_llm";
+    public Boolean logLlmErrorsToChat = true;
 }

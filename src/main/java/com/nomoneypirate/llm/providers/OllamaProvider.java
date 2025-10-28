@@ -4,9 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.llm.*;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
+import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
 public class OllamaProvider implements LlmProvider {
 
@@ -61,6 +65,9 @@ public class OllamaProvider implements LlmProvider {
         return HTTP.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
         .thenApply(resp -> {
             if (resp.statusCode() / 100 != 2) {
+                if (ConfigLoader.config.modLogging) LOGGER.info("Ollama HTTP {}: {}", resp.statusCode(), resp.body());
+                Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
                 throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
             }
             JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();

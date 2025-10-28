@@ -1,7 +1,6 @@
 package com.nomoneypirate.actions;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
-
 import com.mojang.authlib.GameProfile;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.events.ModEvents;
@@ -24,7 +23,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 public class ModDecisions {
 
@@ -384,6 +382,7 @@ public class ModDecisions {
                             try {
                                 server.getPlayerManager().getUserBanList().save();
                             } catch (IOException e) {
+                                if (ConfigLoader.config.modLogging) LOGGER.info(String.valueOf(e));
                                 throw new RuntimeException(e);
                             }
                         }
@@ -408,6 +407,7 @@ public class ModDecisions {
                             try {
                                 server.getPlayerManager().getUserBanList().save();
                             } catch (IOException e) {
+                                if (ConfigLoader.config.modLogging) LOGGER.info(String.valueOf(e));
                                 throw new RuntimeException(e);
                             }
                         }

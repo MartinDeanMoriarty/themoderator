@@ -1,5 +1,6 @@
 package com.nomoneypirate.llm.providers;
 
+import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import java.net.http.*;
 import java.net.URI;
@@ -7,6 +8,11 @@ import java.util.concurrent.CompletableFuture;
 import com.google.gson.*;
 import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.llm.*;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import static com.nomoneypirate.Themoderator.LOGGER;
+import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
 public class OpenAiProvider implements LlmProvider {
 
@@ -50,7 +56,10 @@ public class OpenAiProvider implements LlmProvider {
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
-                        throw new RuntimeException("OpenAI HTTP " + resp.statusCode() + ": " + resp.body());
+                        if (ConfigLoader.config.modLogging) LOGGER.info("Ollama HTTP {}: {}", resp.statusCode(), resp.body());
+                        Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                        if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
+                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     String content = json.getAsJsonArray("choices")

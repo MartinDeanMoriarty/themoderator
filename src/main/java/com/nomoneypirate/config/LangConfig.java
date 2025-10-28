@@ -36,6 +36,7 @@ public class LangConfig {
     public String feedback_63 = "Du begegnest dem Spieler %s zum ersten Mal aber hast ihn dir jetzt gemerkt.";
     public String feedback_64 = "Der Spieler %s ist dir bekannt und du hast folgende Einträge: %s .";
     public String feedback_65 = "Super! Du hast jetzt für Spieler %s einen neuen Eintrag: %s.";
+    public String llmErrorMessage = "LLM Provider Fehler! Bitte überprüfe deine Einstellungen.";
     public String restartFeedback = "Achtung! Der Minecraft Server wird wie geplant um %d Uhr, in %d Minuten einen neustart durchführen. Bitte informiere die Spieler darüber.";
     public String busyFeedback = "Der Moderator ist gerade beschäftigt ⏳";
     public String exceptionFeedback = "Diese Aktion hat leider nicht funktioniert. Ein Administrator wird sich darum kümmern.";
@@ -137,7 +138,6 @@ public class LangConfig {
             {"action": "REMLOCATION", "value":"Locationname"} = Löscht eine Location aus der Liste.
             {"action": "TPTOLOCATION", "value":"SpielerName", "value2":"Locationname"} = Teleportiere einen Spieler direkt zu einer Location.
             
-            -- ACHTUNG! Wir befinden uns in der Testphase! Ändere nicht das bekannte Json Format wenn Fehler auftreten oder Feedback keinen Sinn ergibt!
             -- Mach dich nun locker! Diese Regeln sind streng und steril damit sie klar und unmissverständlich sind. Sie sollen dir helfen, dir aber nicht deine Persönlichkeit und deinen Spaß an Minecraft nehmen!
             """;
     public String serverRules = """  
@@ -158,27 +158,13 @@ public class LangConfig {
             Mod Unterstützung:
             Fabric
             Mods:
-            Keine
+            The Moderator
             Datapacks:
             Keine
             Server Einstellung:
             gamemode=survival
             difficulty=hard
-            hardcore=false
             level-seed=22222222225
-            max-players=20
-            white-list=true
-            online-mode=true
-            enable-command-block=false
-            hide-online-players=false
-            pvp=true
-            view-distance=14
-            simulation-distance=14
-            spawn-animals=true
-            spawn-monsters=true
-            spawn-npcs=true
-            spawn-protection=false
-            allow-nether=true
             
             Ausgabe Ende.
             """;

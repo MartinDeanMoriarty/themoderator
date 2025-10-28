@@ -14,6 +14,7 @@ import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +86,8 @@ public class ModEvents {
                 // Async-Request
                 LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.requestContext.formatted(welcomeText)).thenAccept(decision -> server.execute(() -> ModDecisions.applyDecision(server, decision))).exceptionally(ex -> {
                     if (ConfigLoader.config.modLogging) LOGGER.error("Welcoming failed: {}", ex.getMessage());
+                    Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                    if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
                     return null;
                 });
             }
@@ -133,6 +136,8 @@ public class ModEvents {
                     // Async-Request
                     LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> ModDecisions.applyDecision(server, decision))).exceptionally(ex -> {
                         if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
+                        Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                        if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
                         return null;
                     });
                 }
@@ -145,7 +150,11 @@ public class ModEvents {
         });
 
         // Log this!
-        if (ConfigLoader.config.modLogging) LOGGER.info("4of6 Events Initialized.");
+        if (ConfigLoader.config.modLogging) LOGGER.info("Events Initialized.");
+    }
+
+    public static void logErrorToChat(Text message) {
+        SERVER.getPlayerManager().broadcast(message, false);
     }
 
 }
