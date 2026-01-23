@@ -25,7 +25,7 @@ llm moderator fabric mod for Minecraft
 > <br><br>But our future leaders may prove me wrong, so please be careful.
 ---
 ## Dependencies
-><a href="https://www.minecraft.net/">Minecraft version = 1.21.8</a>
+><a href="https://www.minecraft.net/">Minecraft version = 1.21.X</a>
 ><br><a href="https://fabricmc.net/">Fabric loader 0.17.2 + api-0.133.4+1.21.8</a>
 ><br><a href="https://ollama.com/">Ollama</a> or <a href="https://openai.com/">OpenAi API-Key</a> or <a href="https://gemini.google.com">Google Gemini API-Key</a>
 
