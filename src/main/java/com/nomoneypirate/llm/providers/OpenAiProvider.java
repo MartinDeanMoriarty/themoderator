@@ -1,76 +1,88 @@
 package com.nomoneypirate.llm.providers;
 
+import com.google.gson.*;
 import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
-import java.net.http.*;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-import com.google.gson.*;
-import com.nomoneypirate.events.ModEvents;
 import com.nomoneypirate.llm.*;
+import com.nomoneypirate.llm.tools.ActionRegistry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+
+import java.net.URI;
+import java.net.http.*;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
 import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
+/**
+ * Talks to the OpenAI Chat Completions API using real chat-role messages and native
+ * function/tool calling instead of stuffing the whole conversation into one "user" message.
+ */
 public class OpenAiProvider implements LlmProvider {
 
     private static final String OPENAI_URI = ConfigLoader.config.OpenAiURI;
     private static final String API_KEY = ConfigLoader.config.openAiApiKey;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Gson GSON = new GsonBuilder().create();
-    private static final String SYSTEM_RULES = ConfigLoader.lang.systemRules;
-    // Set llm model token limit
-    static ContextManager contextManager = new ContextManager(ConfigLoader.config.tokenLimit);
+    static ConversationHistory history = new ConversationHistory(ConfigLoader.config.tokenLimit);
 
     @Override
-    public CompletableFuture<ModerationDecision> moderateAsync(LlmClient.ModerationType type, String arg) {
-        // Add to context manager (cache)
-        if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall",  arg);
-        // Set Action Mode
-        if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.SUMMARY) ModEvents.actionMode = false;
-        if (type == LlmClient.ModerationType.MODERATION) ModEvents.actionMode = true;
-        // Build a prompt with token limit and context manager (cache)
-        String prompt = contextManager.buildPrompt("recall");
-        String fullPrompt = type.buildPrompt(SYSTEM_RULES, prompt);
-        // Log this
-        PromptLogger.logPrompt(type, fullPrompt, ConfigLoader.config.openAiModel);
-        // Build prompt for openai
-        JsonObject message = new JsonObject();
-        message.addProperty("role", "user");
-        message.addProperty("content", fullPrompt);
-        JsonArray messages = new JsonArray();
-        messages.add(message);
+    public CompletableFuture<LlmResult> moderateAsync(LlmClient.ModerationType type, String arg) {
+        var turns = history.record(type, arg);
+        boolean nativeTools = ConfigLoader.config.openAiUseNativeTools;
+
         JsonObject body = new JsonObject();
-        body.addProperty("model", ConfigLoader.config.openAiModel); // for example: "gpt-4"
-        body.add("messages", messages);
-        // Build http request
+        body.addProperty("model", ConfigLoader.config.openAiModel); // for example: "gpt-4.1"
+        body.add("messages", ChatMessages.build(ConfigLoader.lang.systemRules, turns, true));
+        if (nativeTools) {
+            body.add("tools", ActionRegistry.toFunctionTools());
+        }
+
+        PromptLogger.logPrompt(type, GSON.toJson(body), ConfigLoader.config.openAiModel);
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OPENAI_URI))
                 .header("Authorization", "Bearer " + API_KEY)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
                 .build();
-        // Send http request and get response async
+
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
-                        if (ConfigLoader.config.modLogging) LOGGER.info("Ollama HTTP {}: {}", resp.statusCode(), resp.body());
+                        if (ConfigLoader.config.modLogging) LOGGER.info("OpenAI HTTP {}: {}", resp.statusCode(), resp.body());
                         Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
                         if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
-                        throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
+                        throw new RuntimeException("OpenAI HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    String content = json.getAsJsonArray("choices")
-                            .get(0).getAsJsonObject()
-                            .getAsJsonObject("message")
-                            .get("content").getAsString().trim();
-                    // Add action to context manager (cache)
-                    if (type == LlmClient.ModerationType.FEEDBACK || type == LlmClient.ModerationType.MODERATION) contextManager.addMessage("recall", ConfigLoader.lang.responseContext.formatted(content));
-                    // return response
-                    return LlmClient.parseDecision(content);
+                    JsonObject message = json.getAsJsonArray("choices").get(0).getAsJsonObject().getAsJsonObject("message");
+                    LlmResult result = parseMessage(message);
+                    PromptLogger.logPrompt(type, "Last used action/output: " + message, ConfigLoader.config.openAiModel);
+                    history.recordAssistantReply(type, result);
+                    return result;
                 });
+    }
+
+    private static LlmResult parseMessage(JsonObject message) {
+        String content = message.has("content") && !message.get("content").isJsonNull() ? message.get("content").getAsString() : "";
+        JsonArray toolCalls = message.has("tool_calls") ? message.getAsJsonArray("tool_calls") : null;
+
+        if (toolCalls != null && !toolCalls.isEmpty()) {
+            JsonObject toolCall = toolCalls.get(0).getAsJsonObject();
+            JsonObject function = toolCall.getAsJsonObject("function");
+            String name = function.get("name").getAsString();
+            // OpenAI encodes arguments as a JSON string, not an object.
+            JsonObject args = JsonParser.parseString(function.get("arguments").getAsString()).getAsJsonObject();
+            Map<String, String> namedArgs = ChatMessages.argsToStringMap(args);
+            String[] positional = ActionRegistry.toPositionalValues(name, namedArgs);
+            String id = toolCall.has("id") ? toolCall.get("id").getAsString() : null;
+            return new LlmResult(content.isBlank() ? null : content, new LlmToolCall(id, name, positional[0], positional[1], positional[2]));
+        }
+
+        return LlmClient.parseFreeText(content);
     }
 
 }

@@ -6,11 +6,15 @@ public class ModConfig {
     //// === Ollama ===
     public Boolean useOllama = true;
     // Usually no change needed.
-    public String ollamaURI = "http://localhost:11434/api/generate";
+    public String ollamaURI = "http://localhost:11434/api/chat";
     // The name of the model used to generate
-    public String ollamaModel = "mistral-nemo";
+    public String ollamaModel = "qwen3.5:latest";
     // Model warm up
     public Boolean ollamaWarmup = false;
+    // Offer actions to the model as native tools/functions (recommended - works even for models
+    // Ollama doesn't officially tag as tool-capable). Set to false for a model that reliably
+    // ignores tool definitions; the moderator then falls back to a schema-constrained JSON reply.
+    public Boolean ollamaUseNativeTools = true;
     //// === OpenAI ===
     public Boolean useOpenAi = false;
     // Usually no change needed.
@@ -19,12 +23,28 @@ public class ModConfig {
     public String openAiApiKey = "?";
     //OpenAi model
     public String openAiModel = "gpt-4.1";
+    // Offer actions as native OpenAI tools/functions. Should stay true for any modern model.
+    public Boolean openAiUseNativeTools = true;
     //// === Google gemini ===
     public Boolean useGemini = false;
     // Usually no change needed.
     public String geminiURI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     // Gemini api-key
-    public String geminiApiKey = "?";
+    public String geminiApiKey = "";
+    // Offer actions as native Gemini function declarations. Should stay true for any modern model.
+    public Boolean geminiUseNativeTools = true;
+    //// === Anthropic (Claude) ===
+    public Boolean useAnthropic = false;
+    // Usually no change needed.
+    public String anthropicURI = "https://api.anthropic.com/v1/messages";
+    // Anthropic api-key. Needs its own console.anthropic.com account with billing set up -
+    // a claude.ai Pro/Max subscription does not include Messages API access.
+    public String anthropicApiKey = "?";
+    // Anthropic model. Haiku is fast/cheap and plenty for chat-moderation; bump to a Sonnet/Opus
+    // model if you want a sharper moderator and don't mind the extra cost per message.
+    public String anthropicModel = "claude-haiku-4-5";
+    // Offer actions as native Anthropic tools. Should stay true for any modern model.
+    public Boolean anthropicUseNativeTools = true;
     //// The "context size" aka "token limit" (attention span) of the moderator
     public Integer tokenLimit = 4096;
     // How much timeout in seconds

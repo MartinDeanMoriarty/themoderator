@@ -21,7 +21,7 @@ public class ModActions {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(name);
             if (player != null) {
                 BlockPos pos = player.getBlockPos();
-                RegistryKey<World> dimensionKey = player.getWorld().getRegistryKey();
+                RegistryKey<World> dimensionKey = player.getEntityWorld().getRegistryKey();
                 String dimensionName = dimensionKey.getValue().getPath();
                 return String.format(ConfigLoader.lang.feedback_13, name, dimensionName, pos.getX(), pos.getY(), pos.getZ());
             }

@@ -31,13 +31,13 @@ public class ModerationScheduler {
                 // If summary is empty, don't let the task go to waste, use it to do something.
                 if (feedback.isEmpty()) feedback = ConfigLoader.lang.feedback_38;
                 // Send summary to llm
-                LlmClient.moderateAsync(LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.summaryContext.formatted(feedback)).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
+                ModDecisions.moderateAndApply(server, LlmClient.ModerationType.SUMMARY, ConfigLoader.lang.summaryContext.formatted(feedback));
             }
 
             case "restart" -> {
                 // Feedback
                 feedback = ConfigLoader.lang.restartFeedback.formatted(ConfigLoader.config.autoRestartHour, ConfigLoader.config.serverRestartPrewarn);
-                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback)).thenAccept(dec ->  ModDecisions.applyDecision(server, dec));
+                ModDecisions.moderateAndApply(server, LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback));
             }
 
         }

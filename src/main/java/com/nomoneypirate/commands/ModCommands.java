@@ -3,19 +3,20 @@ package com.nomoneypirate.commands;
 import static com.nomoneypirate.Themoderator.LOGGER;
 import com.nomoneypirate.config.ConfigLoader;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.command.DefaultPermissions;
 import net.minecraft.text.Text;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class ModCommands {
 
     // Let's register a command to be able to reload configuration file at runtime
-    // Note, we use permission level (2) to make sure only operators can use it
+    // Note, we require the GAMEMASTERS permission tier (the old integer level 2) to make sure only operators can use it
     public static void registerCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 
                 dispatcher.register(
                         literal("moderatorreload")
-                                .requires(source -> source.hasPermissionLevel(2))
+                                .requires(source -> source.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS))
                                 .executes(context -> {
                                     // Load configuration file
                                     ConfigLoader.loadConfig();

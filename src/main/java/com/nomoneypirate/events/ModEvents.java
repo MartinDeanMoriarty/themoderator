@@ -69,8 +69,7 @@ public class ModEvents {
             if (!startAnnounced && server instanceof DedicatedServer) {
                 startAnnounced = true;
                 // Server (re)start message.
-                LlmClient.moderateAsync(LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(ConfigLoader.lang.feedback_17
-                )).thenAccept(dec -> ModDecisions.applyDecision(server, dec));
+                ModDecisions.moderateAndApply(server, LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(ConfigLoader.lang.feedback_17));
             }
 
         });
@@ -106,7 +105,7 @@ public class ModEvents {
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
 
-            MinecraftServer server = sender.getServer();
+            MinecraftServer server = sender.getEntityWorld().getServer();
             if (server == null) return;
 
             String playerName = sender.getName().getString();

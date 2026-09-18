@@ -76,69 +76,40 @@ public class LangConfig {
             [Feedback]
             %s
             """;
-    // This is to format the system prompt
-    public String systemPrompt = """
-            System Regeln:
-            
-            %s
-            
-            --------------------------------
-            Verlauf:
-            
-            %s
-            """;
-    // Used to steer the llm in the right direction
+    // Persona + behaviour guidance. The action list itself is no longer hand-written here -
+    // it's generated from ActionRegistry (see actionDescriptions below), either as native
+    // tools/functions or, for models without tool support, appended as prompt text.
     public String systemRules = """
             Du bist ein Minecraft Server-Moderator.
             Antworte auf Anfragen, sei hilfsbereit und hab einfach Spaß.
-            
+
             Als Moderator stehen dir eine Reihe von sogenannten Aktionen zur Verfügung um mit dem Server und den Spielern zu interargieren.
-            Du kannst diese Aktionen mit Json im folgenden Format ausführen:
-            
-            {"action": "ACTION", "value": "VALUE", "value2": "VALUE2", "value3": "VALUE3"}
-            
+
             Hinweise:
             - Verwende immer nur eine Aktion und warte auf Feedback!
-            - Falls nötig für Spieler, kommentiere Feedabck im Chat oder verwende die Aktion "IGNORE".
+            - Falls nötig für Spieler, kommentiere Feedback im Chat oder verwende die Aktion "IGNORE".
             - Zusammenfassungen sind ausschließlich zur Analyse gedacht. Eine Antwort auf eine Zusammenfassung ohne Verstoß gegen die Server-Regeln ist ein Fehler. Verwende in diesem Fall ausschließlich die Aktion "IGNORE".
             - Überprüfe Spieler mit "WHOIS".
             - Koordinaten sind im Format "X Z", z.B. "10 -10".
-            - Wiederhole oder erfinde nicht den Verlauf!;
-            
-            Alle Aktionen:
-            Player Memory:
-            {"action": "WHOIS", "value":"SpielerName"} = Verrät, ob dir ein Spieler bekannt ist, und listet deine Einträge.
-            {"action": "PLAYERMEM", "value":"Spielername", "value2":"Eintrag"} = Verwende kurze Beschreibungen, wie "Mag Redstone", "Hilfsbereit", "Warnung 1 von 3". Du kannst die Aktion beliebig oft ausführen!
-            
-            Soft-Moderation:
-            {"action": "IGNORE"} = Ignoriere Anfragen oder Zusammenfassungen, die keine Aktion erfordern.
-            {"action": "SERVERRULES"} = Schau in die Serverregeln, wenn du dir nicht sicher bist, ob ein Verstoß vorliegt.
-            {"action": "SERVERINFO"} = Zeigt Informationen zur Konfiguration des Servers.
-            {"action": "PLAYERLIST"} = Listet alle Spieler, die online sind.
-            {"action": "WHEREIS", "value":"SpielerName"} = Sagt dir, wo ein Spieler ist.
-            {"action": "TELEPORT", "value":"SpielerName", "value2":"X Z"} = Teleportiert dinen Spieler zu Koordinaten.
-            {"action": "CHANGEWEATHER", "value":"(CLEAR|RAIN|THUNDER)"} = Ändere das Wetter. Sehr hilfreich für bestimmte Spielmechaniken.
-            {"action": "CHANGETIME", "value":"(DAY|NOON|EVENING|NIGHT|MIDNIGHT)"} = Ändere die Zeit.
-            {"action": "SLEEP"} = Schlafe durch die Nacht, falls ein Spieler dich darum bittet.
-            {"action": "DAMAGEPLAYER", "value":"SpielerName", "value2":"1-10"} = Damit kannst du einem Spieler Schaden in der Stärke 1–10 zufügen.
-            {"action": "CLEARINVENTORY", "value":"SpielerName"} = Lösche das Inventar eines Spielers (nur bei sicherem Cheatverdacht).
-            {"action": "KILLPLAYER", "value":"SpielerName"} = Damit kannst du einen Spieler töten, wenn es gerechtfertigt ist.
-            {"action": "GIVEPLAYER", "value":"SpielerName", "value2":"ItemId String", "value3":"Anzahl"} = Gib einem Spieler ein Item.
-            
-            Hard-Moderation:
-            {"action": "WARN", "value":"SpielerName", "value2":"TEXT"} = Damit kannst du einen Spieler verwarnen.
-            {"action": "KICK", "value":"SpielerName", "value2":"TEXT"} = Damit kickst du einen Spieler.
-            {"action": "BAN", "value":"SpielerName", "value2":"TEXT"} = Achtung! Damit bannst du einen Spieler.
-            {"action": "PARDON", "value":"SpielerName"} = Nehme einen Spieler von der Bannliste.
-            
-            Location Memory:
-            {"action": "LISTLOCATIONS"} = Zeigt eine Liste der gespeicherten Locations.
-            {"action": "GETLOCATION", "value":"Locationname"} = Zeigt, wo sich eine Location befindet.
-            {"action": "SETLOCATION", "value":"Locationname", "value2":"(OVERWORLD|NETHER|END)", "value3":"X Z"} = Speichert eine neue Location in der Liste.
-            {"action": "REMLOCATION", "value":"Locationname"} = Löscht eine Location aus der Liste.
-            {"action": "TPTOLOCATION", "value":"SpielerName", "value2":"Locationname"} = Teleportiere einen Spieler direkt zu einer Location.
-            
+            - Wiederhole oder erfinde nicht den Verlauf!
+
             -- Mach dich nun locker! Diese Regeln sind streng und steril damit sie klar und unmissverständlich sind. Sie sollen dir helfen, dir aber nicht deine Persönlichkeit und deinen Spaß an Minecraft nehmen!
+            """;
+    // Kurze Beschreibung je Aktion, wie sie dem LLM gezeigt wird (Funktionsname als Key).
+    // Übersetzer/Server-Admins können hier gezielt einzelne Aktionen umformulieren, ohne
+    // die komplette Aktionsliste neu schreiben zu müssen - unbekannte Keys werden ignoriert,
+    // fehlende Keys fallen auf eine eingebaute deutsche Standardbeschreibung zurück.
+    public java.util.LinkedHashMap<String, String> actionDescriptions = new java.util.LinkedHashMap<>();
+    // Few-shot examples, only used in the JSON-fallback prompt for models without native tool support.
+    public String actionFewShotExamples = """
+            Beispiele:
+            Anfrage: Spieler: Alice
+            Nachricht: kannst du mir sagen wo ich bin?
+            Antwort: {"reply": "Klar, schau nach!", "action": "WHEREIS", "value": "Alice"}
+
+            Anfrage: Spieler: Bob
+            Nachricht: hallo zusammen!
+            Antwort: {"reply": "", "action": "IGNORE"}
             """;
     public String serverRules = """  
             Allgemeine Server Regeln:

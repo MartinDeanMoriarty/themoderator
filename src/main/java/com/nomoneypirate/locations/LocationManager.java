@@ -9,12 +9,9 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.google.gson.*;
-import java.net.http.*;
-import java.net.http.*;
+import java.util.concurrent.ConcurrentHashMap;
 import com.google.gson.*;
 
 public class LocationManager {
@@ -22,7 +19,9 @@ public class LocationManager {
             .getConfigDir()
             .resolve("themoderator/locationManager.json");
 
-    private static final Map<String, Location> locations = new HashMap<>();
+    // The feedback loop runs entirely on the server thread now, but this is still shared,
+    // mutable state read from command/event handlers too - a plain HashMap isn't safe for that.
+    private static final Map<String, Location> locations = new ConcurrentHashMap<>();
 
     public static void loadLocations() {
         try {

@@ -9,12 +9,9 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.google.gson.*;
-import java.net.http.*;
-import java.net.http.*;
+import java.util.concurrent.ConcurrentHashMap;
 import com.google.gson.*;
 
 public class PlayerManager {
@@ -22,7 +19,9 @@ public class PlayerManager {
             .getConfigDir()
             .resolve("themoderator/playerManager.json");
 
-    private static final Map<String, PlayerProfile> players = new HashMap<>();
+    // The feedback loop runs entirely on the server thread now, but this is still shared,
+    // mutable state read from command/event handlers too - a plain HashMap isn't safe for that.
+    private static final Map<String, PlayerProfile> players = new ConcurrentHashMap<>();
 
     public static void loadPlayers() {
         try {
@@ -59,17 +58,17 @@ public class PlayerManager {
     }
 
     public static void addPlayer(String name) {
-        String location = "";
-        PlayerProfile profile = players.getOrDefault(name,
-                new PlayerProfile(name, location,new ArrayList<>()));
-        players.put(name, profile);
+        // computeIfAbsent instead of getOrDefault+put - the two would race under concurrent access.
+        players.computeIfAbsent(name, n -> new PlayerProfile(n, "", new ArrayList<>()));
         savePlayers();
     }
 
     public static void addLocation(String name, String location) {
         PlayerProfile profile = players.get(name);
         if (profile != null) {
-            profile.locations = location;
+            synchronized (players) {
+                profile.locations = location;
+            }
             savePlayers();
         }
     }
@@ -84,10 +83,17 @@ public class PlayerManager {
 
     public static void addTag(String name, String tag) {
         PlayerProfile profile = players.get(name);
-        if (profile != null && !profile.tags.contains(tag)) {
-            profile.tags.add(tag);
-            savePlayers();
+        if (profile == null) return;
+        // profile.tags is a plain ArrayList, not thread-safe on its own - guard the
+        // check-then-add against a concurrent addTag on the same profile.
+        boolean added = false;
+        synchronized (players) {
+            if (!profile.tags.contains(tag)) {
+                profile.tags.add(tag);
+                added = true;
+            }
         }
+        if (added) savePlayers();
     }
 }
 
