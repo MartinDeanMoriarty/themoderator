@@ -33,8 +33,8 @@ llm moderator fabric mod for Minecraft
 
 ## Dependencies
 
-- [Minecraft](https://www.minecraft.net/) version = 1.21.8
-- [Fabric loader](https://fabricmc.net/) 0.17.2 + api-0.133.4+1.21.8
+- [Minecraft](https://www.minecraft.net/) version >= 26.3
+- [Fabric loader](https://fabricmc.net/) 0.19.5 + api-0.160.7+26.3
 - One llm provider:
 
   | Provider | Needs | Status |
@@ -76,6 +76,7 @@ This version may not be up to date! If you are really into development or just t
 ## Dev-Installation
 
 1. Set up development environment: <https://wiki.fabricmc.net/tutorial:setup>
+   - You'll need a JDK 25 to build (the toolchain for Minecraft's newer, already-named releases requires it) - a portable [Temurin build](https://adoptium.net/temurin/releases/?version=25) works fine, no admin rights needed.
 2. Clone the repository and open the main directory as project.
 3. Have a look at:
    - [ModConfig.java](src/main/java/com/nomoneypirate/config/ModConfig.java)

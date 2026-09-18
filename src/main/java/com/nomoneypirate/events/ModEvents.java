@@ -11,9 +11,9 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import java.time.LocalTime;
 import java.util.*;
@@ -78,14 +78,14 @@ public class ModEvents {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (!actionMode) {
                 // Get player name
-                ServerPlayerEntity player = handler.getPlayer();
+                ServerPlayer player = handler.getPlayer();
                 String playerName = player.getName().getString();
 
                 String welcomeText = ConfigLoader.lang.playerJoined.formatted(playerName);
                 // Async-Request
                 LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, ConfigLoader.lang.requestContext.formatted(welcomeText)).thenAccept(decision -> server.execute(() -> ModDecisions.applyDecision(server, decision))).exceptionally(ex -> {
                     if (ConfigLoader.config.modLogging) LOGGER.error("Welcoming failed: {}", ex.getMessage());
-                    Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                    Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
                     if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
                     return null;
                 });
@@ -105,13 +105,13 @@ public class ModEvents {
         //Intercept chat messages (server-side)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
 
-            MinecraftServer server = sender.getEntityWorld().getServer();
+            MinecraftServer server = sender.level().getServer();
             if (server == null) return;
 
             String playerName = sender.getName().getString();
-            String content = message.getContent().getString();
+            String content = message.signedContent();
             String chatMessage = ConfigLoader.lang.requestContext.formatted(ConfigLoader.lang.playerMessage.formatted(playerName, content));
-            Text busyMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.busyFeedback, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+            Component busyMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.busyFeedback, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
 
             // Add all Chat Messages to moderation scheduler
             if (ConfigLoader.config.scheduledSummary) {
@@ -127,7 +127,7 @@ public class ModEvents {
                     if (now - last < COOLDOWN_MILLIS) {
                         if (SERVER != null)
                             // Chat Output: Model is busy. Using execute to put the message behind player message
-                            server.execute(() -> SERVER.getPlayerManager().broadcast(busyMessage, false));
+                            server.execute(() -> SERVER.getPlayerList().broadcastSystemMessage(busyMessage, false));
                         return;
                     }
                     cooldowns.put("Chat", now);
@@ -135,14 +135,14 @@ public class ModEvents {
                     // Async-Request
                     LlmClient.moderateAsync(LlmClient.ModerationType.MODERATION, chatMessage).thenAccept(decision -> server.execute(() -> ModDecisions.applyDecision(server, decision))).exceptionally(ex -> {
                         if (ConfigLoader.config.modLogging) LOGGER.error("LLM error: {}", ex.getMessage());
-                        Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                        Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
                         if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
                         return null;
                     });
                 }
                 else {
                     // Chat Output: Model is busy. Using execute to put the message behind player message
-                    server.execute(() -> SERVER.getPlayerManager().broadcast(busyMessage, false));
+                    server.execute(() -> SERVER.getPlayerList().broadcastSystemMessage(busyMessage, false));
                 }
             }
 
@@ -152,8 +152,8 @@ public class ModEvents {
         if (ConfigLoader.config.modLogging) LOGGER.info("Events Initialized.");
     }
 
-    public static void logErrorToChat(Text message) {
-        SERVER.getPlayerManager().broadcast(message, false);
+    public static void logErrorToChat(Component message) {
+        SERVER.getPlayerList().broadcastSystemMessage(message, false);
     }
 
 }

@@ -8,14 +8,14 @@ import com.nomoneypirate.llm.ModerationDecision;
 import com.nomoneypirate.locations.Location;
 import com.nomoneypirate.locations.LocationManager;
 import com.nomoneypirate.profiles.PlayerManager;
-import net.minecraft.server.BannedPlayerEntry;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerConfigEntry;
-import net.minecraft.server.WhitelistEntry;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.NameAndId;
+import net.minecraft.server.players.UserBanListEntry;
+import net.minecraft.server.players.UserWhiteListEntry;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -61,7 +61,7 @@ public class ModDecisions {
                     }
 
                     case PLAYERLIST -> {
-                        Collection<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
+                        Collection<ServerPlayer> players = server.getPlayerList().getPlayers();
                         String list = players.stream()
                                 .map(p -> p.getName().getString())
                                 .collect(Collectors.joining(", "));
@@ -121,7 +121,7 @@ public class ModDecisions {
 
                     case CHANGEWEATHER -> {
                         String feedback;
-                        ServerWorld world = server.getOverworld();
+                        ServerLevel world = server.overworld();
                         if (world != null) {
                             feedback = ModActions.changeWeather(world, decision.value());
                             // Feedback
@@ -131,7 +131,7 @@ public class ModDecisions {
 
                     case CHANGETIME -> {
                         String feedback;
-                        ServerWorld world = server.getOverworld();
+                        ServerLevel world = server.overworld();
                         if (world != null) {
                             feedback = ModActions.changeTime(world, decision.value());
                             // Feedback
@@ -233,14 +233,14 @@ public class ModDecisions {
             }
 
             case TELEPORT, TPTOLOCATION, WHEREIS, WARN, KICK, BAN, PARDON, DAMAGEPLAYER, CLEARINVENTORY, KILLPLAYER, GIVEPLAYER -> {
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(decision.value());
+                ServerPlayer player = server.getPlayerList().getPlayer(decision.value());
                 if (player == null) {
                     String feedback = ConfigLoader.lang.feedback_07.formatted(decision.value2());
                     moderateAndApply(server, LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback));
                     return;
                 }
 
-                ServerWorld world = player.getEntityWorld();
+                ServerLevel world = player.level();
                 String playerName = decision.value();
 
                 switch (decision.action()) {
@@ -293,8 +293,8 @@ public class ModDecisions {
 
                     case WARN -> {
                         // Build Text
-                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.RED, false, true, false);
-                        server.getPlayerManager().broadcast(message, false);
+                        Component message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), ChatFormatting.BLUE, ChatFormatting.RED, false, true, false);
+                        server.getPlayerList().broadcastSystemMessage(message, false);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_08.formatted(playerName, decision.value2());
                         moderateAndApply(server, LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback));
@@ -303,8 +303,8 @@ public class ModDecisions {
 
                     case KICK -> {
                         // Build Text
-                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.RED, true, false, true);
-                        player.networkHandler.disconnect(message);
+                        Component message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), ChatFormatting.BLUE, ChatFormatting.RED, true, false, true);
+                        player.connection.disconnect(message);
                         // Feedback
                         String feedback = ConfigLoader.lang.feedback_09.formatted(playerName, decision.value2());
                         moderateAndApply(server, LlmClient.ModerationType.FEEDBACK, ConfigLoader.lang.feedbackContext.formatted(feedback));
@@ -368,23 +368,23 @@ public class ModDecisions {
                             return;
                         }
                         // Build Text
-                        Text message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), Formatting.BLUE, Formatting.DARK_RED, true, false, true);
-                        player.networkHandler.disconnect(message);
+                        Component message = formatChatOutput(ConfigLoader.config.moderatorName + ": ", decision.value2(), ChatFormatting.BLUE, ChatFormatting.DARK_RED, true, false, true);
+                        player.connection.disconnect(message);
 
                         if (ConfigLoader.config.useWhitelist) {
                             // Remove Player of the whitelist
-                            PlayerConfigEntry profile = new PlayerConfigEntry(player.getGameProfile());
-                            WhitelistEntry entry = server.getPlayerManager().getWhitelist().get(profile);
+                            NameAndId profile = new NameAndId(player.getGameProfile());
+                            UserWhiteListEntry entry = server.getPlayerList().getWhiteList().get(profile);
                             if (entry != null) {
-                                server.getPlayerManager().getWhitelist().remove(profile);
-                                server.getPlayerManager().reloadWhitelist();
+                                server.getPlayerList().getWhiteList().remove(profile);
+                                server.getPlayerList().reloadWhiteList();
                             }
                         }
                         if (ConfigLoader.config.useBanlist) {
-                            BannedPlayerEntry entry = getBannedPlayerEntry(decision, player);
-                            server.getPlayerManager().getUserBanList().add(entry);
+                            UserBanListEntry entry = getBannedPlayerEntry(decision, player);
+                            server.getPlayerList().getBans().add(entry);
                             try {
-                                server.getPlayerManager().getUserBanList().save();
+                                server.getPlayerList().getBans().save();
                             } catch (IOException e) {
                                 if (ConfigLoader.config.modLogging) LOGGER.info(String.valueOf(e));
                                 throw new RuntimeException(e);
@@ -398,19 +398,19 @@ public class ModDecisions {
                     case PARDON -> {
                         if (ConfigLoader.config.useWhitelist) {
                             // Put Player on whitelist
-                            PlayerConfigEntry profile = new PlayerConfigEntry(player.getGameProfile());
-                            WhitelistEntry entry = server.getPlayerManager().getWhitelist().get(profile);
+                            NameAndId profile = new NameAndId(player.getGameProfile());
+                            UserWhiteListEntry entry = server.getPlayerList().getWhiteList().get(profile);
                             if (entry == null) {
-                                WhitelistEntry new_entry = new WhitelistEntry(profile);
-                                server.getPlayerManager().getWhitelist().add(new_entry);
-                                server.getPlayerManager().reloadWhitelist();
+                                UserWhiteListEntry new_entry = new UserWhiteListEntry(profile);
+                                server.getPlayerList().getWhiteList().add(new_entry);
+                                server.getPlayerList().reloadWhiteList();
                             }
                         }
                         if (ConfigLoader.config.useBanlist) {
-                            BannedPlayerEntry entry = getBannedPlayerEntry(decision, player);
-                            server.getPlayerManager().getUserBanList().remove(entry);
+                            NameAndId profile = new NameAndId(player.getGameProfile());
+                            server.getPlayerList().getBans().remove(profile);
                             try {
-                                server.getPlayerManager().getUserBanList().save();
+                                server.getPlayerList().getBans().save();
                             } catch (IOException e) {
                                 if (ConfigLoader.config.modLogging) LOGGER.info(String.valueOf(e));
                                 throw new RuntimeException(e);
@@ -427,14 +427,14 @@ public class ModDecisions {
 
     }
 
-    private static @NotNull BannedPlayerEntry getBannedPlayerEntry(ModerationDecision decision, ServerPlayerEntity player) {
-        PlayerConfigEntry profile = new PlayerConfigEntry(player.getGameProfile());
+    private static @NotNull UserBanListEntry getBannedPlayerEntry(ModerationDecision decision, ServerPlayer player) {
+        NameAndId profile = new NameAndId(player.getGameProfile());
         Date now = new Date();
         String reason = decision.value2();
         String source = "[" + ConfigLoader.config.moderatorName + "]";
         //Date expiry = null; // null = permanent
 
-        return new BannedPlayerEntry(
+        return new UserBanListEntry(
                 profile,
                 now,
                 source,
@@ -491,12 +491,12 @@ public class ModDecisions {
         return new Number(number, valid);
     }
 
-    public static Text formatChatOutput(String prefix, String text, Formatting prefixColor, Formatting textColor, boolean bold, boolean italic, boolean underline) {
+    public static Component formatChatOutput(String prefix, String text, ChatFormatting prefixColor, ChatFormatting textColor, boolean bold, boolean italic, boolean underline) {
         // Build Text
         if (prefix.isEmpty()) prefix = "->";
-        return Text.empty()
-                .append(Text.literal(prefix).styled(style -> style.withColor(prefixColor)))
-                .append(Text.literal(text).styled(style -> style.withColor(textColor).withBold(bold).withItalic(italic).withUnderline(underline)));
+        return Component.empty()
+                .append(Component.literal(prefix).withStyle(style -> style.withColor(prefixColor)))
+                .append(Component.literal(text).withStyle(style -> style.withColor(textColor).withBold(bold).withItalic(italic).withUnderlined(underline)));
     }
 
 }

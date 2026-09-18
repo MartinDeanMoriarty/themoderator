@@ -1,88 +1,103 @@
 package com.nomoneypirate.actions;
 
 import com.nomoneypirate.config.ConfigLoader;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.World;
-import net.minecraft.registry.Registries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.saveddata.WeatherData;
+import net.minecraft.world.level.storage.ServerLevelData;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import java.util.Collections;
 
 public class ModActions {
 
     public static String whereIs(MinecraftServer server, String name) {
         if (!name.isEmpty()) {
-            ServerPlayerEntity player = server.getPlayerManager().getPlayer(name);
+            ServerPlayer player = server.getPlayerList().getPlayer(name);
             if (player != null) {
-                BlockPos pos = player.getBlockPos();
-                RegistryKey<World> dimensionKey = player.getEntityWorld().getRegistryKey();
-                String dimensionName = dimensionKey.getValue().getPath();
+                BlockPos pos = player.blockPosition();
+                ResourceKey<Level> dimensionKey = player.level().dimension();
+                String dimensionName = dimensionKey.identifier().getPath();
                 return String.format(ConfigLoader.lang.feedback_13, name, dimensionName, pos.getX(), pos.getY(), pos.getZ());
             }
         }
         return ConfigLoader.lang.feedback_07;
     }
 
-    public static String clearInventory(ServerWorld world, String playerName) {
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+    public static String clearInventory(ServerLevel world, String playerName) {
+        ServerPlayer player = world.getServer().getPlayerList().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
         // Clear inventory but not Armor and off-hand
-        Collections.fill(player.getInventory().getMainStacks(), ItemStack.EMPTY);
+        Collections.fill(player.getInventory().getNonEquipmentItems(), ItemStack.EMPTY);
         return ConfigLoader.lang.feedback_39.formatted(playerName);
     }
 
-    public static String damagePlayer(ServerWorld world, String playerName, int amount) {
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+    public static String damagePlayer(ServerLevel world, String playerName, int amount) {
+        ServerPlayer player = world.getServer().getPlayerList().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
-        player.damage(world, world.getDamageSources().generic(), amount);
+        player.hurtServer(world, world.damageSources().generic(), amount);
         return ConfigLoader.lang.feedback_47.formatted(playerName, amount);
     }
 
-    public static String killPlayer(ServerWorld world, String playerName) {
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+    public static String killPlayer(ServerLevel world, String playerName) {
+        ServerPlayer player = world.getServer().getPlayerList().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
         player.kill(world);
         return ConfigLoader.lang.feedback_40.formatted(playerName);
     }
 
-    public static String givePlayer(ServerWorld world, String playerName, String itemString, int amount) {
+    public static String givePlayer(ServerLevel world, String playerName, String itemString, int amount) {
         // Try to make Item identifier
         Identifier itemId = Identifier.tryParse(itemString.contains(":") ? itemString : "minecraft:" + itemString);
         if (itemId == null) {
             return "Wrong Item-Identifier: " + itemString;
         }
         // Get item from Registry
-        Item item = Registries.ITEM.get(itemId);
+        Item item = BuiltInRegistries.ITEM.getValue(itemId);
         // Get player
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+        ServerPlayer player = world.getServer().getPlayerList().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
         // Build ItemStack
         ItemStack stack = new ItemStack(item, amount);
         // Put item into players inventory
-        boolean success = player.getInventory().insertStack(stack);
+        boolean success = player.getInventory().add(stack);
         // Drop item if player inventory is full
         if (!success) {
-            player.dropItem(stack, false);
+            player.spawnAtLocation(world, stack);
         }
-        return ConfigLoader.lang.feedback_41.formatted(playerName, item.getName().getString());
+        return ConfigLoader.lang.feedback_41.formatted(playerName, item.getName(stack).getString());
     }
 
-    public static String changeWeather(ServerWorld world, String weather) {
+    public static String changeWeather(ServerLevel world, String weather) {
+        WeatherData weatherData = world.getWeatherData();
         switch (weather.toLowerCase()) {
             case "clear":
-                world.setWeather(12000, 0, false, false); // 10 minutes sun
+                weatherData.setClearWeatherTime(12000); // 10 minutes sun
+                weatherData.setRaining(false);
+                weatherData.setRainTime(0);
+                weatherData.setThundering(false);
+                weatherData.setThunderTime(0);
                 break;
             case "rain":
-                world.setWeather(0, 12000, false,false); // 10 minutes rain
+                weatherData.setClearWeatherTime(0);
+                weatherData.setRaining(true);
+                weatherData.setRainTime(12000); // 10 minutes rain
+                weatherData.setThundering(false);
+                weatherData.setThunderTime(0);
                 break;
             case "thunder":
-                world.setWeather(0, 12000, true, true); // 10 minutes
+                weatherData.setClearWeatherTime(0);
+                weatherData.setRaining(true);
+                weatherData.setRainTime(12000); // 10 minutes
+                weatherData.setThundering(true);
+                weatherData.setThunderTime(12000);
                 break;
             default:
             return ConfigLoader.lang.feedback_02;
@@ -90,22 +105,23 @@ public class ModActions {
         return ConfigLoader.lang.feedback_42.formatted(weather);
     }
 
-    public static String changeTime(ServerWorld world, String time) {
+    public static String changeTime(ServerLevel world, String time) {
+        ServerLevelData levelData = (ServerLevelData) world.getLevelData();
         switch (time.toLowerCase()) {
             case "day":
-                world.setTimeOfDay(1000); // Morning
+                levelData.setGameTime(1000); // Morning
                 break;
             case "noon":
-                world.setTimeOfDay(6000); // Noon
+                levelData.setGameTime(6000); // Noon
                 break;
             case "evening":
-                world.setTimeOfDay(12000); // Evening
+                levelData.setGameTime(12000); // Evening
                 break;
             case "night":
-                world.setTimeOfDay(13000); // Night
+                levelData.setGameTime(13000); // Night
                 break;
             case "midnight":
-                world.setTimeOfDay(18000); // Midnight
+                levelData.setGameTime(18000); // Midnight
                 break;
             default:
                 return ConfigLoader.lang.feedback_02;
@@ -113,19 +129,16 @@ public class ModActions {
         return ConfigLoader.lang.feedback_43.formatted(time);
     }
 
-    public static String teleportPositionPlayer(ServerWorld world, String playerName, double posX, double posZ) {
-        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerName);
+    public static String teleportPositionPlayer(ServerLevel world, String playerName, double posX, double posZ) {
+        ServerPlayer player = world.getServer().getPlayerList().getPlayer(playerName);
         if (player == null) return ConfigLoader.lang.feedback_07.formatted(playerName);
         // Check for surface
-        BlockPos surface = world.getTopPosition(
-                Heightmap.Type.MOTION_BLOCKING,
-                new BlockPos((int) posX, 0, (int) posZ)
-        );
-        double x = surface.getX() + 0.5;
-        double y = surface.getY() + 1.0;
-        double z = surface.getZ() + 0.5;
+        int surfaceY = world.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) posX, (int) posZ);
+        double x = posX + 0.5;
+        double y = surfaceY + 1.0;
+        double z = posZ + 0.5;
         // Teleport player
-        player.networkHandler.requestTeleport(x, y, z, player.getYaw(), player.getPitch());
+        player.connection.teleport(x, y, z, player.getYRot(), player.getXRot());
         return ConfigLoader.lang.feedback_35.formatted(playerName);
     }
 

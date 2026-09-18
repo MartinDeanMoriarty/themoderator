@@ -8,8 +8,8 @@ import com.nomoneypirate.llm.providers.AnthropicProvider;
 import com.nomoneypirate.llm.providers.GeminiProvider;
 import com.nomoneypirate.llm.providers.OllamaProvider;
 import com.nomoneypirate.llm.providers.OpenAiProvider;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -68,13 +68,13 @@ public final class LlmClient {
     /** Turns a provider's normalized result into a {@link ModerationDecision}, broadcasting any chat reply. */
     private static ModerationDecision toDecision(LlmResult result) {
         if (result.hasText()) {
-            Text message = com.nomoneypirate.actions.ModDecisions.formatChatOutput(
+            Component message = com.nomoneypirate.actions.ModDecisions.formatChatOutput(
                     ConfigLoader.config.moderatorName + ": ",
                     result.replyText(),
-                    Formatting.BLUE, Formatting.WHITE,
+                    ChatFormatting.BLUE, ChatFormatting.WHITE,
                     false, false, false
             );
-            ModEvents.SERVER.getPlayerManager().broadcast(message, false);
+            ModEvents.SERVER.getPlayerList().broadcastSystemMessage(message, false);
         }
 
         if (!result.hasToolCall()) {

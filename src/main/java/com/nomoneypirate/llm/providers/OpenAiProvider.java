@@ -5,8 +5,8 @@ import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.*;
 import com.nomoneypirate.llm.tools.ActionRegistry;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import java.net.URI;
 import java.net.http.*;
@@ -53,7 +53,7 @@ public class OpenAiProvider implements LlmProvider {
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
                         if (ConfigLoader.config.modLogging) LOGGER.info("OpenAI HTTP {}: {}", resp.statusCode(), resp.body());
-                        Text errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, Formatting.BLUE, Formatting.YELLOW, false, true, false);
+                        Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
                         if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
                         throw new RuntimeException("OpenAI HTTP " + resp.statusCode() + ": " + resp.body());
                     }
