@@ -1,12 +1,9 @@
 package com.nomoneypirate.llm.providers;
 
 import com.google.gson.*;
-import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.*;
 import com.nomoneypirate.llm.tools.ActionRegistry;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
 
 import java.net.URI;
 import java.net.http.*;
@@ -14,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
-import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
 /**
  * Talks to the OpenAI Chat Completions API using real chat-role messages and native
@@ -22,8 +18,6 @@ import static com.nomoneypirate.events.ModEvents.logErrorToChat;
  */
 public class OpenAiProvider implements LlmProvider {
 
-    private static final String OPENAI_URI = ConfigLoader.config.OpenAiURI;
-    private static final String API_KEY = ConfigLoader.config.openAiApiKey;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Gson GSON = new GsonBuilder().create();
     static ConversationHistory history = new ConversationHistory(ConfigLoader.config.tokenLimit);
@@ -35,16 +29,16 @@ public class OpenAiProvider implements LlmProvider {
 
         JsonObject body = new JsonObject();
         body.addProperty("model", ConfigLoader.config.openAiModel); // for example: "gpt-4.1"
-        body.add("messages", ChatMessages.build(ConfigLoader.lang.systemRules, turns, true));
+        body.add("messages", ChatMessages.build(SystemPrompt.base(), turns, true));
         if (nativeTools) {
             body.add("tools", ActionRegistry.toFunctionTools());
         }
 
-        PromptLogger.logPrompt(type, GSON.toJson(body), ConfigLoader.config.openAiModel);
+        PromptLogger.logPrompt(type, GSON.toJson(body.get("messages")), ConfigLoader.config.openAiModel);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(OPENAI_URI))
-                .header("Authorization", "Bearer " + API_KEY)
+                .uri(URI.create(ConfigLoader.config.OpenAiURI))
+                .header("Authorization", "Bearer " + ConfigLoader.config.openAiApiKey)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
                 .build();
@@ -52,9 +46,8 @@ public class OpenAiProvider implements LlmProvider {
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
-                        if (ConfigLoader.config.modLogging) LOGGER.info("OpenAI HTTP {}: {}", resp.statusCode(), resp.body());
-                        Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
-                        if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
+                        LOGGER.warn("OpenAI HTTP {}: {}", resp.statusCode(), resp.body());
+                        // The error shows up in chat once, via the central handler in ModDecisions.moderateAndApply
                         throw new RuntimeException("OpenAI HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();

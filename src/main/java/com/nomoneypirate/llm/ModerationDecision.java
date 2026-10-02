@@ -1,6 +1,16 @@
 package com.nomoneypirate.llm;
 
-public record ModerationDecision(Action action, String value, String value2, String value3) {
+/**
+ * What the moderator decided to do. {@code replied} says whether the model also wrote chat text
+ * (already broadcast by the time this exists) - callers like the restart announcement use it to
+ * know if they need a fallback message.
+ */
+public record ModerationDecision(Action action, String value, String value2, String value3, boolean replied) {
+
+    public ModerationDecision(Action action, String value, String value2, String value3) {
+        this(action, value, value2, value3, false);
+    }
+
     public enum Action {
         WARN,
         KICK,

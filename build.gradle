@@ -53,6 +53,8 @@ java {
 }
 
 jar {
+    // The in-server self test (see Themoderator.onInitialize) is for development only
+    exclude 'com/nomoneypirate/dev/**'
     from("LICENSE") {
         rename { "${it}_${base.archivesName.get()}" }
     }

@@ -36,6 +36,14 @@ public class Themoderator implements ModInitializer {
         PlayerManager.loadPlayers();
         // Load Locations memory
         LocationManager.loadLocations();
+        // Development only: run the in-server self test (class is not part of the release jar)
+        if (System.getenv("THEMODERATOR_SELFTEST") != null) {
+            try {
+                Class.forName("com.nomoneypirate.dev.SelfTest").getMethod("register").invoke(null);
+            } catch (ReflectiveOperationException e) {
+                LOGGER.warn("THEMODERATOR_SELFTEST is set, but the self test is not available: {}", e.toString());
+            }
+        }
         // Warmup ollama model
         if (ConfigLoader.config.useOllama && ConfigLoader.config.ollamaWarmup) OllamaProvider.warmupModel();
     }

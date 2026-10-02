@@ -34,12 +34,12 @@ public class LocationManager {
                 Type type = new TypeToken<Map<String, Location>>() {}.getType();
                 Map<String, Location> loaded = new Gson().fromJson(json, type);
                 locations.clear();
-                locations.putAll(loaded);
+                if (loaded != null) locations.putAll(loaded); // an empty file deserializes to null
             }
             // Log this!
             if (ConfigLoader.config.modLogging) LOGGER.info("Location Manager Initialized.");
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("Error loading Location Manager: {}", e.getMessage());
+            LOGGER.error("Error loading Location Manager: {}", e.getMessage());
         }
     }
 
@@ -50,8 +50,12 @@ public class LocationManager {
                     .toJson(locations);
             Files.writeString(locationPath, json);
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("Error saving location: {}", e.getMessage());
+            LOGGER.error("Error saving location: {}", e.getMessage());
         }
+    }
+
+    public static int count() {
+        return locations.size();
     }
 
     public static List<Location> listLocations() {

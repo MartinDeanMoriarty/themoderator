@@ -1,12 +1,9 @@
 package com.nomoneypirate.llm.providers;
 
 import com.google.gson.*;
-import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.*;
 import com.nomoneypirate.llm.tools.ActionRegistry;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
 
 import java.net.URI;
 import java.net.http.*;
@@ -15,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
-import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
 /**
  * Talks to the Anthropic Messages API using real "user"/"assistant" turns and native tool use.
@@ -26,8 +22,6 @@ import static com.nomoneypirate.events.ModEvents.logErrorToChat;
  */
 public class AnthropicProvider implements LlmProvider {
 
-    private static final String ANTHROPIC_URI = ConfigLoader.config.anthropicURI;
-    private static final String API_KEY = ConfigLoader.config.anthropicApiKey;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Gson GSON = new GsonBuilder().create();
     static ConversationHistory history = new ConversationHistory(ConfigLoader.config.tokenLimit);
@@ -40,17 +34,17 @@ public class AnthropicProvider implements LlmProvider {
         JsonObject body = new JsonObject();
         body.addProperty("model", ConfigLoader.config.anthropicModel);
         body.addProperty("max_tokens", 2048);
-        body.addProperty("system", ConfigLoader.lang.systemRules);
+        body.addProperty("system", SystemPrompt.base());
         body.add("messages", buildMessages(turns));
         if (nativeTools) {
             body.add("tools", ActionRegistry.toAnthropicTools());
         }
 
-        PromptLogger.logPrompt(type, GSON.toJson(body), ConfigLoader.config.anthropicModel);
+        PromptLogger.logPrompt(type, GSON.toJson(body.get("messages")), ConfigLoader.config.anthropicModel);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(ANTHROPIC_URI))
-                .header("x-api-key", API_KEY)
+                .uri(URI.create(ConfigLoader.config.anthropicURI))
+                .header("x-api-key", ConfigLoader.config.anthropicApiKey)
                 .header("anthropic-version", "2023-06-01")
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
@@ -59,9 +53,8 @@ public class AnthropicProvider implements LlmProvider {
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
-                        if (ConfigLoader.config.modLogging) LOGGER.info("Anthropic HTTP {}: {}", resp.statusCode(), resp.body());
-                        Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
-                        if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
+                        LOGGER.warn("Anthropic HTTP {}: {}", resp.statusCode(), resp.body());
+                        // The error shows up in chat once, via the central handler in ModDecisions.moderateAndApply
                         throw new RuntimeException("Anthropic HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();

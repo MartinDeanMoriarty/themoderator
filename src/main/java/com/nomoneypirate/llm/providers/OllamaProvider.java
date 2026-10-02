@@ -5,13 +5,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
-import com.nomoneypirate.events.ModEvents;
+import com.nomoneypirate.config.ModConfig;
 import com.nomoneypirate.llm.*;
 import com.nomoneypirate.llm.tools.ActionRegistry;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -24,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
-import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
 /**
  * Talks to Ollama's {@code /api/chat} endpoint using real chat-role messages instead of one
@@ -34,39 +30,51 @@ import static com.nomoneypirate.events.ModEvents.logErrorToChat;
  * for a model that handles plain JSON-schema-constrained output more reliably than tool syntax -
  * in that mode the action list is described in the system prompt and the response is
  * grammar-constrained via {@code format} instead.
+ * <p>
+ * URL, model and the other settings are read from the config on every request, so
+ * {@code /moderatorreload} takes effect (switching the provider itself still needs a restart).
  */
 public class OllamaProvider implements LlmProvider {
 
-    private static final URI OLLAMA_URI = URI.create(ConfigLoader.config.ollamaURI);
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(ConfigLoader.config.connectionTimeout))
             .build();
     private static final Gson GSON = new GsonBuilder().create();
-    private static final String MODEL = ConfigLoader.config.ollamaModel;
     static ConversationHistory history = new ConversationHistory(ConfigLoader.config.tokenLimit);
     // Warm up
     private static final AtomicBoolean isWarmedUp = new AtomicBoolean(false);
 
     @Override
     public CompletableFuture<LlmResult> moderateAsync(LlmClient.ModerationType type, String arg) {
+        ModConfig cfg = ConfigLoader.config;
+        String model = cfg.ollamaModel;
         var turns = history.record(type, arg);
-        boolean nativeTools = ConfigLoader.config.ollamaUseNativeTools;
+        boolean nativeTools = cfg.ollamaUseNativeTools;
 
         JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
+        body.addProperty("model", model);
         body.addProperty("stream", false);
-        body.add("messages", ChatMessages.build(systemText(nativeTools), turns, false));
+        JsonArray messages = ChatMessages.build(systemText(nativeTools), turns, false);
+        body.add("messages", messages);
         if (nativeTools) {
             body.add("tools", ActionRegistry.toFunctionTools());
         } else {
             body.add("format", ActionRegistry.toFallbackContentSchema());
         }
+        // Without an explicit window Ollama uses its own default (often just 4096) and silently cuts the START
+        // of an oversized prompt - which is the system prompt. Tell it the window the history budget is based on.
+        JsonObject options = new JsonObject();
+        options.addProperty("num_ctx", cfg.ollamaNumCtx != null && cfg.ollamaNumCtx > 0 ? cfg.ollamaNumCtx : cfg.tokenLimit);
+        body.add("options", options);
+        // Thinking models (e.g. qwen3.5) reason before every answer, which costs seconds per chat message.
+        if ("on".equalsIgnoreCase(cfg.ollamaThink)) body.addProperty("think", true);
+        else if ("off".equalsIgnoreCase(cfg.ollamaThink)) body.addProperty("think", false);
 
-        PromptLogger.logPrompt(type, GSON.toJson(body), MODEL);
+        PromptLogger.logPrompt(type, GSON.toJson(messages), model);
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(OLLAMA_URI)
-                .timeout(Duration.ofSeconds(ConfigLoader.config.responseTimeout))
+                .uri(URI.create(cfg.ollamaURI))
+                .timeout(Duration.ofSeconds(cfg.responseTimeout))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body), StandardCharsets.UTF_8))
                 .build();
@@ -74,15 +82,14 @@ public class OllamaProvider implements LlmProvider {
         return HTTP.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
-                        if (ConfigLoader.config.modLogging) LOGGER.info("Ollama HTTP {}: {}", resp.statusCode(), resp.body());
-                        Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
-                        if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
+                        LOGGER.warn("Ollama HTTP {}: {}", resp.statusCode(), resp.body());
+                        // The error shows up in chat once, via the central handler in ModDecisions.moderateAndApply
                         throw new RuntimeException("Ollama HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();
                     JsonObject message = json.getAsJsonObject("message");
                     LlmResult result = parseMessage(message);
-                    PromptLogger.logPrompt(type, "Last used action/output: " + message, MODEL);
+                    PromptLogger.logPrompt(type, "Last used action/output: " + message, model);
                     history.recordAssistantReply(type, result);
                     return result;
                 });
@@ -106,8 +113,7 @@ public class OllamaProvider implements LlmProvider {
     }
 
     private static String systemText(boolean nativeTools) {
-        if (nativeTools) return ConfigLoader.lang.systemRules;
-        return ConfigLoader.lang.systemRules + "\n\n" + ActionRegistry.toFallbackPromptText() + "\n" + ConfigLoader.lang.actionFewShotExamples;
+        return nativeTools ? SystemPrompt.base() : SystemPrompt.withFallbackActions();
     }
 
     // Used at mod init so ollama has a chance to be ready when the world is loaded
@@ -121,7 +127,7 @@ public class OllamaProvider implements LlmProvider {
         if (ConfigLoader.config.modLogging) LOGGER.info("Ollama warm-up!");
         // An empty prompt should just load a model
         JsonObject body = new JsonObject();
-        body.addProperty("model", MODEL);
+        body.addProperty("model", ConfigLoader.config.ollamaModel);
         body.addProperty("prompt", " ");
         body.addProperty("stream", false);
 
@@ -135,7 +141,7 @@ public class OllamaProvider implements LlmProvider {
                         .build();
                 HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.discarding());
             } catch (Exception e) {
-                if (ConfigLoader.config.modLogging) LOGGER.warn("Ollama Warmup failed: {}", e.getMessage());
+                LOGGER.warn("Ollama Warmup failed: {}", e.getMessage());
             }
         });
     }

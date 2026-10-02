@@ -34,12 +34,12 @@ public class PlayerManager {
                 Type type = new TypeToken<Map<String, PlayerProfile>>() {}.getType();
                 Map<String, PlayerProfile> loaded = new Gson().fromJson(json, type);
                 players.clear();
-                players.putAll(loaded);
+                if (loaded != null) players.putAll(loaded); // an empty file deserializes to null
             }
             // Log this!
             if (ConfigLoader.config.modLogging) LOGGER.info("Player Manager Initialized.");
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("Error loading Player Manager: {}", e.getMessage());
+            LOGGER.error("Error loading Player Manager: {}", e.getMessage());
         }
     }
     public static void savePlayers() {
@@ -49,22 +49,32 @@ public class PlayerManager {
                     .toJson(players);
             Files.writeString(playerPath, json);
         } catch (IOException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.error("Error saving player: {}", e.getMessage());
+            LOGGER.error("Error saving player: {}", e.getMessage());
         }
     }
 
+    /** The LLM spells names however it likes - map "bob" onto the stored "Bob" instead of creating a second profile. */
+    private static String resolveKey(String name) {
+        if (name == null) return "";
+        if (players.containsKey(name)) return name;
+        for (String key : players.keySet()) {
+            if (key.equalsIgnoreCase(name)) return key;
+        }
+        return name;
+    }
+
     public static boolean isKnown(String name) {
-        return players.containsKey(name);
+        return name != null && players.containsKey(resolveKey(name));
     }
 
     public static void addPlayer(String name) {
         // computeIfAbsent instead of getOrDefault+put - the two would race under concurrent access.
-        players.computeIfAbsent(name, n -> new PlayerProfile(n, "", new ArrayList<>()));
+        players.computeIfAbsent(resolveKey(name), n -> new PlayerProfile(n, "", new ArrayList<>()));
         savePlayers();
     }
 
     public static void addLocation(String name, String location) {
-        PlayerProfile profile = players.get(name);
+        PlayerProfile profile = players.get(resolveKey(name));
         if (profile != null) {
             synchronized (players) {
                 profile.locations = location;
@@ -74,22 +84,27 @@ public class PlayerManager {
     }
 
     public static PlayerProfile getProfile(String name) {
-        return players.get(name);
+        return players.get(resolveKey(name));
     }
 
     public static List<PlayerProfile> listProfiles() {
         return new ArrayList<>(players.values());
     }
 
+    // Notes are written by the LLM - keep a profile from growing without bound
+    private static final int MAX_TAGS = 30;
+
     public static void addTag(String name, String tag) {
-        PlayerProfile profile = players.get(name);
+        PlayerProfile profile = players.get(resolveKey(name));
         if (profile == null) return;
         // profile.tags is a plain ArrayList, not thread-safe on its own - guard the
         // check-then-add against a concurrent addTag on the same profile.
         boolean added = false;
         synchronized (players) {
+            if (profile.tags == null) profile.tags = new ArrayList<>();
             if (!profile.tags.contains(tag)) {
                 profile.tags.add(tag);
+                while (profile.tags.size() > MAX_TAGS) profile.tags.remove(0);
                 added = true;
             }
         }

@@ -15,6 +15,13 @@ public class ModConfig {
     // Ollama doesn't officially tag as tool-capable). Set to false for a model that reliably
     // ignores tool definitions; the moderator then falls back to a schema-constrained JSON reply.
     public Boolean ollamaUseNativeTools = true;
+    // Context window in tokens sent to Ollama ("num_ctx"). 0 = use tokenLimit (below). Ollama's own default
+    // is often just 4096, and it silently cuts off the start of a prompt that doesn't fit - the system prompt.
+    public Integer ollamaNumCtx = 0;
+    // Thinking models (e.g. qwen3.5, gemma4) reason before every answer. "off" = 2-3x faster replies, but in tests
+    // the answers got worse and some models (gemma4) then write actions as chat text instead of calling them.
+    // "on" = force thinking, "auto" = whatever the model does by default (recommended).
+    public String ollamaThink = "auto";
     //// === OpenAI ===
     public Boolean useOpenAi = false;
     // Usually no change needed.
@@ -45,8 +52,10 @@ public class ModConfig {
     public String anthropicModel = "claude-haiku-4-5";
     // Offer actions as native Anthropic tools. Should stay true for any modern model.
     public Boolean anthropicUseNativeTools = true;
-    //// The "context size" aka "token limit" (attention span) of the moderator
-    public Integer tokenLimit = 4096;
+    //// The "context size" aka "token limit" (attention span) of the moderator.
+    // The system prompt and the action definitions already take ~2.6k of it, plus room for the answer
+    // (thinking models need a lot) - so 8192 is a sensible minimum for a conversation with some memory.
+    public Integer tokenLimit = 8192;
     // How much timeout in seconds
     public Integer connectionTimeout = 30;
     public Integer responseTimeout = 30;
@@ -63,11 +72,21 @@ public class ModConfig {
     public Integer requestCooldown = 1;
     // Is moderator allowed to use BAN?
     public Boolean allowBanCommand = false;
-    // Server with a whitelist should use this!
+    // BAN always writes the vanilla ban list (so /pardon and the vanilla banlist commands work).
+    // Servers with a whitelist can additionally let BAN remove the player from it (PARDON adds them back).
     public Boolean useWhitelist = false;
-    // Server without a whitelist should use this!
-    // But it is possible to use both.
+    // Kept so old config files stay valid - BAN uses the ban list regardless of this setting now.
     public Boolean useBanlist = false;
+    //// === Safety ===
+    // The moderator may never kick/ban/kill/damage/clear the inventory of operators. A prompt alone can't
+    // stop someone from talking the LLM into it, this check happens in code.
+    public Boolean protectOperators = true;
+    // Actions the LLM is not allowed to use at all, e.g. ["WHEREIS", "GIVEPLAYER"]. The LLM gets told the
+    // action is disabled. Names as in the action list (KICK, BAN, GIVEPLAYER, TELEPORT, ...).
+    public Set<String> disabledActions = new java.util.HashSet<>();
+    // How many actions the LLM may chain after one player message (action -> feedback -> next action ...)
+    // before the chain is cut off, so a confused model can't loop forever.
+    public Integer maxActionChain = 6;
     //// === Moderation schedules ===
     // Scheduled summaries
     public Boolean scheduledSummary = false;
@@ -83,9 +102,11 @@ public class ModConfig {
     // Moderation schedule logging
     public Boolean scheduleLogging = false;
     public String scheduleLogFilename = "themoderator_schedule";
-    // Mod Logging
+    // Mod logging: the mod's own informational lines ("Config Initialized", warm-up, ...) in the normal
+    // Minecraft log (console + logs/latest.log, tagged "themoderator"). Errors, warnings and the audit line
+    // for every executed moderation action are ALWAYS logged, regardless of this setting.
     public  Boolean modLogging = true;
-    // LLM Logging
+    // LLM Logging: writes the messages sent to the LLM into logs/<llmLogFilename>.log (separate file)
     public Boolean llmLogging = true;
     public String llmLogFilename = "themoderator_llm";
     public Boolean logLlmErrorsToChat = true;

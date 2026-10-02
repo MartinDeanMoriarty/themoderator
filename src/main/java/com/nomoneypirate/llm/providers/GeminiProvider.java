@@ -1,12 +1,9 @@
 package com.nomoneypirate.llm.providers;
 
 import com.google.gson.*;
-import com.nomoneypirate.actions.ModDecisions;
 import com.nomoneypirate.config.ConfigLoader;
 import com.nomoneypirate.llm.*;
 import com.nomoneypirate.llm.tools.ActionRegistry;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
 
 import java.net.URI;
 import java.net.http.*;
@@ -15,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
-import static com.nomoneypirate.events.ModEvents.logErrorToChat;
 
 /**
  * Talks to the Gemini generateContent API using real "user"/"model" turns and native
@@ -28,8 +24,6 @@ import static com.nomoneypirate.events.ModEvents.logErrorToChat;
  */
 public class GeminiProvider implements LlmProvider {
 
-    private static final String GEMINI_URI = ConfigLoader.config.geminiURI;
-    private static final String API_KEY = ConfigLoader.config.geminiApiKey;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Gson GSON = new GsonBuilder().create();
     static ConversationHistory history = new ConversationHistory(ConfigLoader.config.tokenLimit);
@@ -40,7 +34,7 @@ public class GeminiProvider implements LlmProvider {
         boolean nativeTools = ConfigLoader.config.geminiUseNativeTools;
 
         JsonObject systemInstruction = new JsonObject();
-        systemInstruction.add("parts", singleTextPart(ConfigLoader.lang.systemRules));
+        systemInstruction.add("parts", singleTextPart(SystemPrompt.base()));
 
         JsonObject body = new JsonObject();
         body.add("systemInstruction", systemInstruction);
@@ -53,10 +47,10 @@ public class GeminiProvider implements LlmProvider {
             body.add("tools", tools);
         }
 
-        PromptLogger.logPrompt(type, GSON.toJson(body), "Gemini");
+        PromptLogger.logPrompt(type, GSON.toJson(body.get("contents")), "Gemini");
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(GEMINI_URI + "?key=" + API_KEY))
+                .uri(URI.create(ConfigLoader.config.geminiURI + "?key=" + ConfigLoader.config.geminiApiKey))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
                 .build();
@@ -64,9 +58,8 @@ public class GeminiProvider implements LlmProvider {
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> {
                     if (resp.statusCode() / 100 != 2) {
-                        if (ConfigLoader.config.modLogging) LOGGER.info("Gemini HTTP {}: {}", resp.statusCode(), resp.body());
-                        Component errorMessage = ModDecisions.formatChatOutput("", ConfigLoader.lang.llmErrorMessage, ChatFormatting.BLUE, ChatFormatting.YELLOW, false, true, false);
-                        if (ConfigLoader.config.logLlmErrorsToChat) logErrorToChat(errorMessage);
+                        LOGGER.warn("Gemini HTTP {}: {}", resp.statusCode(), resp.body());
+                        // The error shows up in chat once, via the central handler in ModDecisions.moderateAndApply
                         throw new RuntimeException("Gemini HTTP " + resp.statusCode() + ": " + resp.body());
                     }
                     JsonObject json = JsonParser.parseString(resp.body()).getAsJsonObject();

@@ -8,10 +8,13 @@ import com.nomoneypirate.llm.providers.AnthropicProvider;
 import com.nomoneypirate.llm.providers.GeminiProvider;
 import com.nomoneypirate.llm.providers.OllamaProvider;
 import com.nomoneypirate.llm.providers.OpenAiProvider;
-import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.nomoneypirate.Themoderator.LOGGER;
 
@@ -35,16 +38,17 @@ public final class LlmClient {
     // We have different situations so let's react to them
     public enum ModerationType {
 
-        MODERATION(ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
-        FEEDBACK(ConfigLoader.config.llmLogFilename, ConfigLoader.config.llmLogging),
-        SUMMARY(ConfigLoader.config.scheduleLogFilename, ConfigLoader.config.scheduleLogging);
+        MODERATION,
+        FEEDBACK,
+        SUMMARY;
 
-        public final String logFilenamePrefix;
-        public final boolean loggingEnabled;
+        /** Read live, so /moderatorreload takes effect. */
+        public boolean loggingEnabled() {
+            return this == SUMMARY ? ConfigLoader.config.scheduleLogging : ConfigLoader.config.llmLogging;
+        }
 
-        ModerationType(String logFilenamePrefix, boolean loggingEnabled) {
-            this.logFilenamePrefix = logFilenamePrefix;
-            this.loggingEnabled = loggingEnabled;
+        public String logFilenamePrefix() {
+            return this == SUMMARY ? ConfigLoader.config.scheduleLogFilename : ConfigLoader.config.llmLogFilename;
         }
 
         /** Whether this turn becomes part of the rolling conversation history. Summaries are one-shot. */
@@ -59,37 +63,62 @@ public final class LlmClient {
     }
 
     public static CompletableFuture<ModerationDecision> moderateAsync(ModerationType type, String arg) {
-        // Set Action Mode - a moderation request expects the LLM to look at fresh input,
-        // feedback/summary calls are just reporting back what already happened.
-        ModEvents.actionMode = type == ModerationType.MODERATION;
-        return PROVIDER.moderateAsync(type, arg).thenApply(LlmClient::toDecision);
+        // A moderation request starts a chain of actions during which the moderator is busy. The chain
+        // ends in ModDecisions (IGNORE, error or chain limit) - feedback and summary calls are part of
+        // that chain or independent of it, so they must not touch the flag.
+        if (type == ModerationType.MODERATION) ModEvents.setBusy(true);
+        return PROVIDER.moderateAsync(type, arg)
+                .thenApply(LlmClient::toDecision)
+                .whenComplete((decision, error) -> {
+                    // A failed call (timeout, HTTP error, ...) never reaches the code that would end the chain.
+                    if (error != null && type != ModerationType.SUMMARY) ModEvents.setBusy(false);
+                });
     }
 
     /** Turns a provider's normalized result into a {@link ModerationDecision}, broadcasting any chat reply. */
     private static ModerationDecision toDecision(LlmResult result) {
-        if (result.hasText()) {
+        MinecraftServer server = ModEvents.SERVER;
+        // A model that writes its action into the chat ("KICK Eve ...", "GIVEPLAYER{...}") instead of calling it
+        // must not show that to the players, and the text is never executed - it goes back as a usage error.
+        if (!result.hasToolCall() && result.hasText() && LEAKED_ACTION.matcher(result.replyText()).matches()) {
+            LOGGER.warn("The model wrote an action as chat text instead of calling it: '{}'", result.replyText());
+            return new ModerationDecision(ModerationDecision.Action.SELFFEEDBACK, ConfigLoader.lang.feedback_02, "", "", false);
+        }
+        if (result.hasText() && server != null) {
             Component message = com.nomoneypirate.actions.ModDecisions.formatChatOutput(
                     ConfigLoader.config.moderatorName + ": ",
                     result.replyText(),
                     ChatFormatting.BLUE, ChatFormatting.WHITE,
                     false, false, false
             );
-            ModEvents.SERVER.getPlayerList().broadcastSystemMessage(message, false);
+            // This runs on the HTTP client's thread - the player list belongs to the server thread.
+            server.execute(() -> server.getPlayerList().broadcastSystemMessage(message, false));
         }
 
         if (!result.hasToolCall()) {
-            return new ModerationDecision(ModerationDecision.Action.IGNORE, "", "", "");
+            return new ModerationDecision(ModerationDecision.Action.IGNORE, "", "", "", result.hasText());
         }
 
         LlmToolCall call = result.toolCall();
         try {
             ModerationDecision.Action action = ModerationDecision.Action.valueOf(call.actionName().toUpperCase());
             return new ModerationDecision(action,
-                    nullToEmpty(call.value()), nullToEmpty(call.value2()), nullToEmpty(call.value3()));
+                    nullToEmpty(call.value()), nullToEmpty(call.value2()), nullToEmpty(call.value3()), result.hasText());
         } catch (IllegalArgumentException | NullPointerException e) {
-            if (ConfigLoader.config.modLogging) LOGGER.info("Unclear LLM Output: unknown action '{}'", call.actionName());
-            return new ModerationDecision(ModerationDecision.Action.SELFFEEDBACK, ConfigLoader.lang.feedback_02, "", "");
+            LOGGER.warn("Unclear LLM output: unknown action '{}'", call.actionName());
+            return new ModerationDecision(ModerationDecision.Action.SELFFEEDBACK, ConfigLoader.lang.feedback_02, "", "", result.hasText());
         }
+    }
+
+    // "KICK Bob ...", "GIVEPLAYER{...}" or "... [SERVERRULES]" - an action name in capitals where a sentence should be
+    private static final Pattern LEAKED_ACTION = Pattern.compile(
+            "(?s)^\\s*\\[?(?:" + actionNames() + ")\\b.*|.*\\[(?:" + actionNames() + ")\\].*");
+
+    private static String actionNames() {
+        return java.util.Arrays.stream(ModerationDecision.Action.values())
+                .filter(a -> a != ModerationDecision.Action.IGNORE && a != ModerationDecision.Action.SELFFEEDBACK)
+                .map(Enum::name)
+                .collect(java.util.stream.Collectors.joining("|"));
     }
 
     private static String nullToEmpty(String s) {
@@ -140,10 +169,20 @@ public final class LlmClient {
      * schema-constrained {@code format}) and defensively for native tool-calling models that
      * occasionally answer in prose instead of calling a tool.
      */
+    // Case-sensitive on purpose: a model writing the action name uses capitals, ordinary prose ("just ignore it") doesn't
+    private static final Pattern IGNORE_AS_TEXT = Pattern.compile("^(.*?)(?:^|\\s|[\\[(])IGNORE[\\])\\s.]*$", Pattern.DOTALL);
+
     public static LlmResult parseFreeText(String rawText) {
         String text = rawText == null ? "" : rawText.trim();
         JsonObject json = extractJsonObject(text);
         if (json == null || !json.has("action")) {
+            // Some models write the action name into the chat instead of calling it ("... Viel Spaß! IGNORE") -
+            // that must not end up in front of the players, it means "nothing to do".
+            Matcher ignore = IGNORE_AS_TEXT.matcher(text);
+            if (ignore.matches()) {
+                String rest = ignore.group(1).trim();
+                return new LlmResult(rest.isEmpty() ? null : rest, new LlmToolCall(null, "IGNORE", null, null, null));
+            }
             return LlmResult.textOnly(text);
         }
 
