@@ -33,7 +33,7 @@ The Moderator: Nice try, but I don't kick people on request.
 ## Warning
 
 > [!WARNING]
-> It should NOT run on public servers!
+> Be careful!
 >
 > It is in development and mostly NOT tested and possibly also unstable!
 >
