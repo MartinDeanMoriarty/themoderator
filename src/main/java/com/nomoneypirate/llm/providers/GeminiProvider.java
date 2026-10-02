@@ -17,15 +17,15 @@ import static com.nomoneypirate.Themoderator.LOGGER;
  * Talks to the Gemini generateContent API using real "user"/"model" turns and native
  * function-declarations instead of stuffing the whole conversation into one text part.
  * <p>
- * Note: implemented against Google's documented function-calling shape (a "function" role
- * content carrying a functionResponse part) but not live-verified in this session - no
- * Gemini API key was available to test against. Please try it against your key and report
- * back if the tool-call round trip needs adjusting.
+ * A function result goes back as a "user" content carrying a functionResponse part, and a
+ * function call keeps the thought signature the model sent with it (required by Gemini 3).
  */
 public class GeminiProvider implements LlmProvider {
 
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Gson GSON = new GsonBuilder().create();
+    // Google's documented placeholder for function calls that carry no real thought signature
+    private static final String SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator";
     static ConversationHistory history = new ConversationHistory(ConfigLoader.config.tokenLimit);
 
     @Override
@@ -97,6 +97,10 @@ public class GeminiProvider implements LlmProvider {
                         functionCall.add("args", args);
                         JsonObject part = new JsonObject();
                         part.add("functionCall", functionCall);
+                        // Gemini 3 refuses a function call without its thought signature. Calls that never
+                        // had one (plain-JSON replies, history from before) get the documented bypass value.
+                        part.addProperty("thoughtSignature", call.thoughtSignature() != null
+                                ? call.thoughtSignature() : SKIP_THOUGHT_SIGNATURE);
                         JsonArray parts = new JsonArray();
                         parts.add(part);
                         content.add("parts", parts);
@@ -112,7 +116,9 @@ public class GeminiProvider implements LlmProvider {
                         content.addProperty("role", "user");
                         content.add("parts", singleTextPart(turn.text()));
                     } else {
-                        content.addProperty("role", "function");
+                        // The API rejects the old "function" role ("Role 'function' is not supported"):
+                        // a functionResponse part travels in a plain "user" content
+                        content.addProperty("role", "user");
                         JsonObject response = new JsonObject();
                         response.addProperty("content", turn.text() == null ? "" : turn.text());
                         JsonObject functionResponse = new JsonObject();
@@ -164,7 +170,8 @@ public class GeminiProvider implements LlmProvider {
                 Map<String, String> namedArgs = ChatMessages.argsToStringMap(functionCall.getAsJsonObject("args"));
                 String[] positional = ActionRegistry.toPositionalValues(name, namedArgs);
                 String reply = text.toString().isBlank() ? null : text.toString().trim();
-                return new LlmResult(reply, new LlmToolCall(null, name, positional[0], positional[1], positional[2]));
+                String signature = part.has("thoughtSignature") ? part.get("thoughtSignature").getAsString() : null;
+                return new LlmResult(reply, new LlmToolCall(null, name, positional[0], positional[1], positional[2], signature));
             }
             if (part.has("text")) text.append(part.get("text").getAsString());
         }

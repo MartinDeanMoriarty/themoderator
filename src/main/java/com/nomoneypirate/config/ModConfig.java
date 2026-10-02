@@ -34,8 +34,12 @@ public class ModConfig {
     public Boolean openAiUseNativeTools = true;
     //// === Google gemini ===
     public Boolean useGemini = false;
-    // Usually no change needed.
-    public String geminiURI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    // The model is part of this URL. "gemini-flash-latest" always points to Google's current Flash model;
+    // pin a specific one (e.g. .../models/gemini-3.8-flash:generateContent) if you want it to never change.
+    // Google retires old models for new API keys (gemini-2.5-flash already is - HTTP 404 "no longer available
+    // to new users"), so if you get that error, change the model name here.
+    // The free tier allows only about 5 requests per minute per model - a busy chat will hit HTTP 429.
+    public String geminiURI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
     // Gemini api-key
     public String geminiApiKey = "";
     // Offer actions as native Gemini function declarations. Should stay true for any modern model.

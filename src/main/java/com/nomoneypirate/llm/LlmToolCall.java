@@ -8,6 +8,12 @@ package com.nomoneypirate.llm;
  *
  * @param id optional provider-assigned id (OpenAI needs this to correlate the
  *           following tool-result message; Ollama/Gemini don't require it)
+ * @param thoughtSignature opaque token Gemini 3 models attach to a function call. The API
+ *           rejects the next request unless it is sent back unchanged with that call.
  */
-public record LlmToolCall(String id, String actionName, String value, String value2, String value3) {
+public record LlmToolCall(String id, String actionName, String value, String value2, String value3, String thoughtSignature) {
+
+    public LlmToolCall(String id, String actionName, String value, String value2, String value3) {
+        this(id, actionName, value, value2, value3, null);
+    }
 }
