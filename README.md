@@ -184,6 +184,7 @@ With Gemini the model is part of `geminiURI`. The default `gemini-flash-latest` 
    - [LangConfig.java](src/main/java/com/nomoneypirate/config/LangConfig.java) - be careful with translations!
 4. Build the project with `./gradlew build` (the jar ends up in `build/libs`) or run it in the IDE.
 5. Optional: `THEMODERATOR_SELFTEST=1 ./gradlew runServer` runs the moderator's actions (time, weather, teleport, give, pardon, ...) and a full llm request chain inside a real dedicated server and prints PASS/FAIL. The Mojang EULA has to be accepted in `run/eula.txt` for that, as for any server. The self test is not part of the release jar.
+6. Optional: `THEMODERATOR_SELFTEST=chat ./gradlew runServer` starts a real dedicated server and lets a few fake players write a short conversation in the chat (a question, a request, a prompt injection attempt, a thank you). The answers show up in the server log - handy to try a provider or model without joining the game. It uses the provider from `run/config/themoderator/config.json` and pauses 15 seconds between messages, so rate limits of free cloud tiers are less of a problem. Not part of the release jar either.
 
 ---
 
