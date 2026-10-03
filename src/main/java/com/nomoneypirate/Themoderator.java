@@ -37,9 +37,12 @@ public class Themoderator implements ModInitializer {
         // Load Locations memory
         LocationManager.loadLocations();
         // Development only: run the in-server self test (class is not part of the release jar)
-        if (System.getenv("THEMODERATOR_SELFTEST") != null) {
+        String selfTest = System.getenv("THEMODERATOR_SELFTEST");
+        if (selfTest != null) {
             try {
-                Class.forName("com.nomoneypirate.dev.SelfTest").getMethod("register").invoke(null);
+                // THEMODERATOR_SELFTEST=chat plays a short live chat instead of the action checks
+                String testClass = selfTest.equals("chat") ? "LiveChat" : "SelfTest";
+                Class.forName("com.nomoneypirate.dev." + testClass).getMethod("register").invoke(null);
             } catch (ReflectiveOperationException e) {
                 LOGGER.warn("THEMODERATOR_SELFTEST is set, but the self test is not available: {}", e.toString());
             }
